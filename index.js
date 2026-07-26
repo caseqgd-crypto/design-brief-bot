@@ -1,13 +1,27 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
+const axios = require("axios");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const TOKEN = process.env.BOT_TOKEN;
+const GEMINI_KEY = process.env.GEMINI_API_KEY;
+
 if (!TOKEN) {
-  console.error("❌ BOT_TOKEN не найден. Создай .env с BOT_TOKEN=твой_токен");
+  console.error("❌ BOT_TOKEN не найден");
   process.exit(1);
 }
 
 const bot = new TelegramBot(TOKEN, { polling: true });
+let genAI = null;
+let critiqueModel = null;
+
+if (GEMINI_KEY) {
+  genAI = new GoogleGenerativeAI(GEMINI_KEY);
+  critiqueModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  console.log("🧠 Gemini подключён — критика дизайна доступна");
+} else {
+  console.log("⚠️ GEMINI_API_KEY не задан — /critique недоступен");
+}
 
 const PROJECT_TYPES = [
   "Логотип", "Фирменный стиль", "Сайт (лендинг)", "Сайт (многостраничный)",
@@ -135,24 +149,24 @@ function generateBrief(difficulty = "middle") {
   const now = new Date().toLocaleString("ru-RU");
 
   return (
-    `📋 <b>ТЕХНИЧЕСКОЕ ЗАДАНИЕ</b>\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+    "📋 <b>ТЕХНИЧЕСКОЕ ЗАДАНИЕ</b>\n" +
+    "━━━━━━━━━━━━━━━━━━━━━━\n\n" +
     `<b>Тип проекта:</b> ${project}\n` +
     `<b>Бренд:</b> ${brandName} — ${brandDesc}\n` +
     `<b>Индустрия:</b> ${industry}\n` +
     `<b>Сложность:</b> ${diffText}\n` +
     `<b>Срок:</b> ${deadline}\n\n` +
-    `🎨 <b>СТИЛЬ И ВИЗУАЛ</b>\n` +
+    "🎨 <b>СТИЛЬ И ВИЗУАЛ</b>\n" +
     `• Направление: ${style}\n` +
     `• Цвета: ${colors}\n` +
     `• Настроение: ${mood}\n\n` +
-    `📝 <b>ТРЕБОВАНИЯ</b>\n` +
+    "📝 <b>ТРЕБОВАНИЯ</b>\n" +
     `• ${reqs.join("\n• ")}\n\n` +
-    `💎 <b>ОСОБЕННОСТЬ</b>\n` +
+    "💎 <b>ОСОБЕННОСТЬ</b>\n" +
     `• ${bonus}\n\n` +
     `<b>Контекст:</b> Это реальный проект для вымышленного стартапа. Дизайн должен решать бизнес-задачу: привлечь ЦА и выделиться на рынке ${industry.toLowerCase()}.\n\n` +
-    `<b>Подсказка:</b> Не бойся экспериментировать — это тренировка!\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━━━\n` +
+    "<b>Подсказка:</b> Не бойся экспериментировать — это тренировка!\n\n" +
+    "━━━━━━━━━━━━━━━━━━━━━━\n" +
     `🕒 Сгенерировано: ${now}`
   );
 }
@@ -173,13 +187,20 @@ function keyboard(difficulty) {
   };
 }
 
+const startText =
+  "🎨 <b>Design Brief Bot</b>\n\n" +
+  "Привет! Я помогаю дизайнерам прокачиваться.\n\n" +
+  "Что умею:\n" +
+  "• Случайное ТЗ → /brief\n" +
+  "• Junior / Middle / Senior → кнопки\n" +
+  "• Анализ дизайна → отправь фото или /critique\n\n" +
+  "<i>Нажми кнопку или просто отправь скриншот своей работы 👇</i>";
+
 bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
-  bot.sendMessage(
-    chatId,
-    "🎨 <b>Design Brief Bot</b>\n\nПривет! Я генерирую <b>технические задания на дизайн</b> для прокачки навыков и портфолио.\n\nЧто умею:\n• Случайное ТЗ → /brief\n• Junior / Middle / Senior → кнопки ниже\n• Бесконечные комбинации — каждый раз уникальное задание\n\n<i>Нажми «Новое ТЗ» или выбери уровень сложности 👇</i>",
-    { parse_mode: "HTML", ...keyboard("middle") }
-  );
+  bot.sendMessage(msg.chat.id, startText, {
+    parse_mode: "HTML",
+    ...keyboard("middle"),
+  });
 });
 
 bot.onText(/\/brief(.+)?/, (msg, match) => {
@@ -187,9 +208,77 @@ bot.onText(/\/brief(.+)?/, (msg, match) => {
   const arg = (match[1] || "").trim().toLowerCase();
   let diff = "middle";
   if (["junior", "middle", "senior"].includes(arg)) diff = arg;
-  const text = generateBrief(diff);
-  bot.sendMessage(chatId, text, { parse_mode: "HTML", ...keyboard(diff) });
+  bot.sendMessage(chatId, generateBrief(diff), {
+    parse_mode: "HTML",
+    ...keyboard(diff),
+  });
 });
+
+bot.onText(/\/critique/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  if (!critiqueModel) {
+    return bot.sendMessage(
+      chatId,
+      "❌ Анализ дизайна отключён. Администратор не добавил GEMINI_API_KEY.\n\n" +
+        "Запроси бесплатный ключ: https://aistudio.google.com/apikey",
+    );
+  }
+
+  if (msg.reply_to_message && msg.reply_to_message.photo) {
+    await analyzePhoto(chatId, msg.reply_to_message.photo);
+  } else {
+    bot.sendMessage(
+      chatId,
+      "📸 Отправь мне скриншот или фото дизайна, и я проанализирую его.\n\n" +
+        "Или ответь этой командой на уже отправленное изображение.",
+    );
+  }
+});
+
+bot.on("photo", async (msg) => {
+  if (!critiqueModel) return;
+
+  const chatId = msg.chat.id;
+  const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
+
+  try {
+    const analysis = await analyzeImage(msg.photo);
+    await bot.deleteMessage(chatId, waitMsg.message_id);
+    bot.sendMessage(chatId, analysis, { parse_mode: "HTML" });
+  } catch (err) {
+    await bot.deleteMessage(chatId, waitMsg.message_id);
+    bot.sendMessage(chatId, `❌ Ошибка анализа: ${err.message}`);
+  }
+});
+
+async function analyzeImage(photos) {
+  const photo = photos[photos.length - 1];
+  const file = await bot.getFile(photo.file_id);
+  const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`;
+  const resp = await axios.get(fileUrl, { responseType: "arraybuffer" });
+  const base64 = Buffer.from(resp.data).toString("base64");
+  const mimeType = file.file_path.endsWith(".png") ? "image/png" : "image/jpeg";
+
+  const prompt =
+    "Ты — senior дизайнер с 10-летним опытом. Проанализируй этот дизайн и дай структурированную обратную связь на русском языке.\n\n" +
+    "📊 <b>СТРУКТУРА ОТВЕТА:</b>\n\n" +
+    "✅ <b>Что сделано хорошо</b> (3-5 пунктов)\n" +
+    "• напиши конкретные сильные стороны: композиция, цвета, типографика, иерархия, отступы\n\n" +
+    "⚠️ <b>Что можно улучшить</b> (2-4 пункта)\n" +
+    "• конкретные ошибки и зоны роста\n\n" +
+    "💡 <b>Рекомендации</b> (2-3 пункта)\n" +
+    "• конкретные шаги что исправить прямо сейчас\n\n" +
+    "🎯 <b>Оценка</b> (от 1 до 10)\n\n" +
+    "Будь конструктивным. Пиши по делу, без воды. Если дизайн отличный — похвали, но всё равно найди что улучшить.";
+
+  const result = await critiqueModel.generateContent([
+    prompt,
+    { inlineData: { data: base64, mimeType } },
+  ]);
+
+  return result.response.text();
+}
 
 bot.on("callback_query", (query) => {
   const data = query.data;
@@ -199,8 +288,7 @@ bot.on("callback_query", (query) => {
   bot.answerCallbackQuery(query.id);
 
   if (data === "new") {
-    const text = generateBrief("middle");
-    bot.editMessageText(text, {
+    bot.editMessageText(generateBrief("middle"), {
       chat_id: chatId,
       message_id: messageId,
       parse_mode: "HTML",
@@ -208,24 +296,20 @@ bot.on("callback_query", (query) => {
     });
   } else if (data.startsWith("diff_")) {
     const diff = data.split("_")[1];
-    const text = generateBrief(diff);
-    bot.editMessageText(text, {
+    bot.editMessageText(generateBrief(diff), {
       chat_id: chatId,
       message_id: messageId,
       parse_mode: "HTML",
       ...keyboard(diff),
     });
   } else if (data === "start") {
-    bot.editMessageText(
-      "🎨 <b>Design Brief Bot</b>\n\nПривет! Я генерирую <b>технические задания на дизайн</b> для прокачки навыков и портфолио.\n\nЧто умею:\n• Случайное ТЗ → /brief\n• Junior / Middle / Senior → кнопки ниже\n• Бесконечные комбинации — каждый раз уникальное задание\n\n<i>Нажми «Новое ТЗ» или выбери уровень сложности 👇</i>",
-      {
-        chat_id: chatId,
-        message_id: messageId,
-        parse_mode: "HTML",
-        ...keyboard("middle"),
-      }
-    );
+    bot.editMessageText(startText, {
+      chat_id: chatId,
+      message_id: messageId,
+      parse_mode: "HTML",
+      ...keyboard("middle"),
+    });
   }
 });
 
-console.log("🤖 Бот запущен. Нажми Ctrl+C для остановки.");
+console.log("🤖 Design Brief Bot запущен");

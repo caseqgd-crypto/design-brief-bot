@@ -17,7 +17,7 @@ let critiqueModel = null;
 
 if (GEMINI_KEY) {
   genAI = new GoogleGenerativeAI(GEMINI_KEY);
-  critiqueModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  critiqueModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
   console.log("🧠 Gemini подключён — критика дизайна доступна");
 } else {
   console.log("⚠️ GEMINI_API_KEY не задан — /critique недоступен");
@@ -226,7 +226,15 @@ bot.onText(/\/critique/, async (msg) => {
   }
 
   if (msg.reply_to_message && msg.reply_to_message.photo) {
-    await analyzePhoto(chatId, msg.reply_to_message.photo);
+    const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
+    try {
+      const analysis = await analyzeImage(msg.reply_to_message.photo);
+      await bot.deleteMessage(chatId, waitMsg.message_id);
+      await bot.sendMessage(chatId, analysis, { parse_mode: "HTML" });
+    } catch (err) {
+      await bot.deleteMessage(chatId, waitMsg.message_id);
+      await bot.sendMessage(chatId, `❌ Ошибка анализа: ${err.message}`);
+    }
   } else {
     bot.sendMessage(
       chatId,
@@ -242,13 +250,26 @@ bot.on("photo", async (msg) => {
   const chatId = msg.chat.id;
   const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
 
-  try {
-    const analysis = await analyzeImage(msg.photo);
-    await bot.deleteMessage(chatId, waitMsg.message_id);
-    bot.sendMessage(chatId, analysis, { parse_mode: "HTML" });
-  } catch (err) {
-    await bot.deleteMessage(chatId, waitMsg.message_id);
-    bot.sendMessage(chatId, `❌ Ошибка анализа: ${err.message}`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const analysis = await analyzeImage(msg.photo);
+      await bot.deleteMessage(chatId, waitMsg.message_id);
+      await bot.sendMessage(chatId, analysis, { parse_mode: "HTML" });
+      return;
+    } catch (err) {
+      if (err.message.includes("429") && attempt < 3) {
+        const delay = attempt * 25 * 1000;
+        await bot.editMessageText(
+          `⏳ Лимит запросов. Жду ${delay / 1000}с перед повтором (попытка ${attempt}/3)...`,
+          { chat_id: chatId, message_id: waitMsg.message_id },
+        );
+        await sleep(delay);
+      } else {
+        await bot.deleteMessage(chatId, waitMsg.message_id);
+        await bot.sendMessage(chatId, `❌ Ошибка анализа: ${err.message}`);
+        return;
+      }
+    }
   }
 });
 
@@ -278,6 +299,10 @@ async function analyzeImage(photos) {
   ]);
 
   return result.response.text();
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 bot.on("callback_query", (query) => {

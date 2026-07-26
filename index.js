@@ -27,6 +27,181 @@ const savedBriefs = new Map();
 const lastBrief = new Map();
 const quizSessions = new Map();
 const userStats = new Map();
+const userLang = new Map();
+
+const LANG = {
+  ru: {
+    name: "Русский",
+    start: "🎨 Design Brief Bot\n\nПривет! Я помогаю дизайнерам прокачиваться.\n\n/brief — ТЗ\n/palette — палитра\n/challenge — задание\n/quiz — квиз\n/stats — статистика\n/save — сохранить\n/saved — сохранёнки\n/review — оценка дизайна\n/language — сменить язык",
+    brief: "📋 ТЗ",
+    palette: "🎨 Палитра",
+    challenge: "🎯 Челендж",
+    quiz: "🧠 Квиз",
+    stats: "📊 Статистика",
+    saved: "📂 Сохранёнки",
+    brief_btn: "📋 ТЗ",
+    palette_btn: "🎨 Палитра",
+    challenge_btn: "🎯 Челендж",
+    quiz_btn: "🧠 Квиз",
+    save: "Сохранить",
+    new: "Новое ТЗ",
+    home: "В начало",
+    stats_btn: "📊 Статистика",
+    saved_btn: "📂 Сохранёнки",
+    saved_none: "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить",
+    saved_title: "📂 Мои сохранёнки",
+    saved_max: "Максимум 20 сохранёнок",
+    save_first: "Сначала сгенерируй ТЗ через /brief",
+    saved_done: "✅ ТЗ сохранено!",
+    saved_dup: "Уже сохранено",
+    saved_del: "🗑 Удалено!",
+    saved_notfound: "ТЗ не найдено",
+    lang_choose: "🌐 Выбери язык / Choose language / Elige un idioma:",
+    lang_changed: "✅ Язык изменён на русский",
+    review_intro: "📸 Отправь скриншот дизайна и ответь на него /review\n\nЯ оценю, найду плюсы и минусы.",
+    review_no_key: "❌ AI-ревью отключён. Добавь GROQ_API_KEY в Render → Environment.\n\nПолучить бесплатно: https://console.groq.com",
+    review_wait: "🔍 Анализирую дизайн...",
+    review_prompt: "Ты senior дизайнер. Оцени дизайн на фото. Пиши ТОЛЬКО на русском языке. НИ СЛОВА на английском. Без звездочек. Формат ответа строго:\n\nОценка: число из 100\n\nОшибки:\nсписок ошибок\n\nПлюсы:\nсписок плюсов\n\nРекомендации:\nчто исправить",
+    review_err: "❌ Ошибка",
+    palette_send: "Скопируй hex и вставь в Figma!",
+    challenge_title: "🎯 Челендж",
+    challenge_hint: "Сделай и закрепи результат в портфолио!",
+    quiz_question: "Вопрос",
+    quiz_start: "🧠 Начинаем квиз!",
+    quiz_correct: "✅ Верно!",
+    quiz_wrong: "❌ Неверно. Правильный ответ:",
+    grade_bot: "🤡",
+    grade_god: "🏆 Дизайн-бог!",
+    grade_awesome: "🔥 Отлично!",
+    grade_good: "👍 Неплохо",
+    grade_study: "📚 Учи матчасть",
+    quiz_done: "🧠 Квиз завершён!",
+    correct: "Правильно",
+    no_stats: "• Пока нет",
+    stats_title: "📊 Моя статистика",
+    stats_total: "Всего ТЗ",
+    stats_reviewed: "Оценено работ",
+    stats_avg: "Средняя оценка",
+    stats_by_type: "📋 По типам",
+    server_error: "Неизвестная ошибка",
+    empty_response: "Пустой ответ от AI",
+    max_saved: "Максимум 20 сохранёнок. Удали одну через /saved",
+  },
+  en: {
+    name: "English",
+    start: "🎨 Design Brief Bot\n\nHi! I help designers level up.\n\n/brief — design brief\n/palette — color palette\n/challenge — task\n/quiz — quiz\n/stats — statistics\n/save — save brief\n/saved — my saved\n/review — design review\n/language — change language",
+    brief: "📋 Brief",
+    palette: "🎨 Palette",
+    challenge: "🎯 Challenge",
+    quiz: "🧠 Quiz",
+    stats: "📊 Stats",
+    saved: "📂 Saved",
+    brief_btn: "📋 Brief",
+    palette_btn: "🎨 Palette",
+    challenge_btn: "🎯 Challenge",
+    quiz_btn: "🧠 Quiz",
+    save: "Save",
+    new: "New Brief",
+    home: "Home",
+    stats_btn: "📊 Stats",
+    saved_btn: "📂 Saved",
+    saved_none: "📂 No saved briefs yet. Generate one → /brief → 💾 Save",
+    saved_title: "📂 My saved briefs",
+    saved_max: "Maximum 20 saved briefs",
+    save_first: "Generate a brief first via /brief",
+    saved_done: "✅ Brief saved!",
+    saved_dup: "Already saved",
+    saved_del: "🗑 Deleted!",
+    saved_notfound: "Brief not found",
+    lang_choose: "🌐 Choose language / Выбери язык / Elige un idioma:",
+    lang_changed: "✅ Language changed to English",
+    review_intro: "📸 Send a design screenshot and reply with /review\n\nI'll rate it, find pros and cons.",
+    review_no_key: "❌ AI review disabled. Add GROQ_API_KEY in Render → Environment.\n\nGet free key: https://console.groq.com",
+    review_wait: "🔍 Analyzing design...",
+    review_prompt: "You are a senior designer. Analyze the design photo. Write ONLY in English. No asterisks. Strict format:\n\nScore: number out of 100\n\nMistakes:\nlist of mistakes\n\nPros:\nlist of pros\n\nRecommendations:\nwhat to fix",
+    review_err: "❌ Error",
+    palette_send: "Copy hex codes and paste into Figma!",
+    challenge_title: "🎯 Challenge",
+    challenge_hint: "Complete it and add to your portfolio!",
+    quiz_question: "Question",
+    quiz_start: "🧠 Starting quiz!",
+    quiz_correct: "✅ Correct!",
+    quiz_wrong: "❌ Wrong. Correct answer:",
+    grade_bot: "🤡",
+    grade_god: "🏆 Design god!",
+    grade_awesome: "🔥 Awesome!",
+    grade_good: "👍 Not bad",
+    grade_study: "📚 Study more",
+    quiz_done: "🧠 Quiz complete!",
+    correct: "Correct",
+    no_stats: "• None yet",
+    stats_title: "📊 My stats",
+    stats_total: "Total briefs",
+    stats_reviewed: "Reviewed works",
+    stats_avg: "Average score",
+    stats_by_type: "📋 By type",
+    server_error: "Unknown error",
+    empty_response: "Empty response from AI",
+    max_saved: "Max 20 saved briefs. Delete one via /saved",
+  },
+  es: {
+    name: "Español",
+    start: "🎨 Design Brief Bot\n\n¡Hola! Ayudo a diseñadores a mejorar.\n\n/brief — briefing\n/palette — paleta\n/challenge — desafío\n/quiz — cuestionario\n/stats — estadísticas\n/save — guardar\n/saved — guardados\n/review — evaluación\n/language — cambiar idioma",
+    brief: "📋 Briefing",
+    palette: "🎨 Paleta",
+    challenge: "🎯 Desafío",
+    quiz: "🧠 Quiz",
+    stats: "📊 Stats",
+    saved: "📂 Guardados",
+    brief_btn: "📋 Briefing",
+    palette_btn: "🎨 Paleta",
+    challenge_btn: "🎯 Desafío",
+    quiz_btn: "🧠 Quiz",
+    save: "Guardar",
+    new: "Nuevo Briefing",
+    home: "Inicio",
+    stats_btn: "📊 Stats",
+    saved_btn: "📂 Guardados",
+    saved_none: "📂 Sin guardados. Genera un briefing → /brief → 💾 Guardar",
+    saved_title: "📂 Mis briefings guardados",
+    saved_max: "Máximo 20 briefings guardados",
+    save_first: "Primero genera un briefing con /brief",
+    saved_done: "✅ Briefing guardado!",
+    saved_dup: "Ya guardado",
+    saved_del: "🗑 Eliminado!",
+    saved_notfound: "Briefing no encontrado",
+    lang_choose: "🌐 Elige un idioma / Choose language / Выбери язык:",
+    lang_changed: "✅ Idioma cambiado a Español",
+    review_intro: "📸 Envía una captura de diseño y responde con /review\n\nEvaluaré, encontraré pros y contras.",
+    review_no_key: "❌ Evaluación AI desactivada. Añade GROQ_API_KEY en Render → Environment.\n\nObtén clave gratis: https://console.groq.com",
+    review_wait: "🔍 Analizando diseño...",
+    review_prompt: "Eres un diseñador senior. Analiza el diseño de la foto. Escribe SOLO en español. SIN asteriscos. Formato estricto:\n\nPuntuación: número de 100\n\nErrores:\nlista de errores\n\nPros:\nlista de pros\n\nRecomendaciones:\nqu\\u00e9 mejorar",
+    review_err: "❌ Error",
+    palette_send: "¡Copia los códigos hex y pégalos en Figma!",
+    challenge_title: "🎯 Desafío",
+    challenge_hint: "¡Complétalo y agrégalo a tu portafolio!",
+    quiz_question: "Pregunta",
+    quiz_start: "🧠 ¡Empezando cuestionario!",
+    quiz_correct: "✅ ¡Correcto!",
+    quiz_wrong: "❌ Incorrecto. Respuesta correcta:",
+    grade_bot: "🤡",
+    grade_god: "🏆 ¡Dios del diseño!",
+    grade_awesome: "🔥 ¡Excelente!",
+    grade_good: "👍 No está mal",
+    grade_study: "📚 Estudia más",
+    quiz_done: "🧠 ¡Cuestionario completado!",
+    correct: "Correcto",
+    no_stats: "• Ninguno aún",
+    stats_title: "📊 Mis estadísticas",
+    stats_total: "Total briefings",
+    stats_reviewed: "Trabajos evaluados",
+    stats_avg: "Puntuación media",
+    stats_by_type: "📋 Por tipo",
+    server_error: "Error desconocido",
+    empty_response: "Respuesta vacía del AI",
+    max_saved: "Máximo 20 guardados. Elimina uno con /saved",
+  },
+};
 
 const PROJECT_TYPES = [
   "Логотип", "Фирменный стиль", "Сайт (лендинг)", "Сайт (многостраничный)",
@@ -340,6 +515,23 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function lang(chatId) {
+  return LANG[userLang.get(chatId) || "ru"];
+}
+
+function langKeyboard(chatId) {
+  const l = lang(chatId);
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: l.brief_btn, callback_data: "cb_brief" }, { text: l.palette_btn, callback_data: "cb_palette" }],
+        [{ text: l.challenge_btn, callback_data: "cb_challenge" }, { text: l.quiz_btn, callback_data: "cb_quiz" }],
+        [{ text: l.stats_btn, callback_data: "cb_stats" }, { text: l.saved_btn, callback_data: "saved_list" }],
+      ],
+    },
+  };
+}
+
 function getStats(chatId) {
   if (!userStats.has(chatId)) {
     userStats.set(chatId, { total: 0, byType: {}, reviews: [], scores: [] });
@@ -385,31 +577,20 @@ function generateBrief(difficulty = "middle") {
   };
 }
 
-function briefKeyboard(difficulty) {
+function briefKeyboard(chatId, difficulty) {
+  const l = lang(chatId);
   return {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "💾 Сохранить", callback_data: "save_last" }],
-        [{ text: "🔄 Новое ТЗ", callback_data: "new" }],
+        [{ text: "💾 " + l.save, callback_data: "save_last" }],
+        [{ text: "🔄 " + l.new, callback_data: "new" }],
         [
           { text: "🟢 Junior", callback_data: "diff_junior" },
           { text: "🟡 Middle", callback_data: "diff_middle" },
           { text: "🔴 Senior", callback_data: "diff_senior" },
         ],
-        [{ text: "📂 Мои сохранёнки", callback_data: "saved_list" }],
-        [{ text: "🏠 В начало", callback_data: "start" }],
-      ],
-    },
-  };
-}
-
-function startKeyboard() {
-  return {
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: "📋 ТЗ", callback_data: "cb_brief" }, { text: "🎨 Палитра", callback_data: "cb_palette" }],
-        [{ text: "🎯 Челендж", callback_data: "cb_challenge" }, { text: "🧠 Квиз", callback_data: "cb_quiz" }],
-        [{ text: "📊 Статистика", callback_data: "cb_stats" }, { text: "📂 Сохранёнки", callback_data: "saved_list" }],
+        [{ text: "📂 " + l.saved, callback_data: "saved_list" }],
+        [{ text: "🏠 " + l.home, callback_data: "start" }],
       ],
     },
   };
@@ -428,9 +609,31 @@ const startText =
   "<i>Выбери что хочешь 👇</i>";
 
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(msg.chat.id, startText, {
-    parse_mode: "HTML",
-    ...startKeyboard(),
+  const chatId = msg.chat.id;
+  if (!userLang.has(chatId)) {
+    return bot.sendMessage(chatId, "🌐 Выбери язык / Choose language / Elige un idioma:", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🇷🇺 Русский", callback_data: "lang_ru" }],
+          [{ text: "🇬🇧 English", callback_data: "lang_en" }],
+          [{ text: "🇪🇸 Español", callback_data: "lang_es" }],
+        ],
+      },
+    });
+  }
+  const l = lang(chatId);
+  bot.sendMessage(chatId, l.start, { parse_mode: "HTML", ...langKeyboard(chatId) });
+});
+
+bot.onText(/\/language/, (msg) => {
+  bot.sendMessage(msg.chat.id, "🌐 Выбери язык / Choose language / Elige un idioma:", {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "🇷🇺 Русский", callback_data: "lang_ru" }],
+        [{ text: "🇬🇧 English", callback_data: "lang_en" }],
+        [{ text: "🇪🇸 Español", callback_data: "lang_es" }],
+      ],
+    },
   });
 });
 
@@ -445,19 +648,20 @@ bot.onText(/\/brief(.+)?/, (msg, match) => {
   stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
 
   lastBrief.set(chatId, result.text);
-  bot.sendMessage(chatId, result.text, { parse_mode: "HTML", ...briefKeyboard(diff) });
+  bot.sendMessage(chatId, result.text, { parse_mode: "HTML", ...briefKeyboard(chatId, diff) });
 });
 
 bot.onText(/\/save/, (msg) => {
   const chatId = msg.chat.id;
+  const l = lang(chatId);
   const brief = lastBrief.get(chatId);
-  if (!brief) return bot.sendMessage(chatId, "Сначала сгенерируй ТЗ через /brief");
+  if (!brief) return bot.sendMessage(chatId, l.save_first);
   if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
   const list = savedBriefs.get(chatId);
-  if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок");
-  if (list.includes(brief)) return bot.sendMessage(chatId, "Уже сохранено");
+  if (list.length >= 20) return bot.sendMessage(chatId, l.saved_max);
+  if (list.includes(brief)) return bot.sendMessage(chatId, l.saved_dup);
   list.push(brief);
-  bot.sendMessage(chatId, "✅ ТЗ сохранено!");
+  bot.sendMessage(chatId, l.saved_done);
 });
 
 bot.onText(/\/saved/, (msg) => showSavedList(msg.chat.id));
@@ -465,13 +669,16 @@ bot.onText(/\/saved/, (msg) => showSavedList(msg.chat.id));
 bot.onText(/\/stats/, (msg) => showStats(msg.chat.id));
 
 bot.onText(/\/palette/, (msg) => {
+  const chatId = msg.chat.id;
   const [name, ...colors] = pick(PALETTES);
   const hex = colors.map((c) => `• <code>${c}</code>`).join("\n");
-  bot.sendMessage(msg.chat.id, `🎨 <b>${name}</b>\n\n${hex}\n\n<i>Скопируй hex и вставь в Figma!</i>`, { parse_mode: "HTML" });
+  bot.sendMessage(chatId, `🎨 <b>${name}</b>\n\n${hex}\n\n<i>${lang(chatId).palette_send}</i>`, { parse_mode: "HTML" });
 });
 
 bot.onText(/\/challenge/, (msg) => {
-  bot.sendMessage(msg.chat.id, `🎯 <b>Челендж</b>\n\n${pick(CHALLENGES)}\n\n<i>Сделай и закрепи результат в портфолио!</i>`, { parse_mode: "HTML" });
+  const chatId = msg.chat.id;
+  const l = lang(chatId);
+  bot.sendMessage(chatId, `${l.challenge_title}\n\n${pick(CHALLENGES)}\n\n<i>${l.challenge_hint}</i>`, { parse_mode: "HTML" });
 });
 
 bot.onText(/\/quiz/, (msg) => startQuiz(msg.chat.id));
@@ -479,31 +686,19 @@ bot.onText(/\/quiz/, (msg) => startQuiz(msg.chat.id));
 bot.onText(/\/review/, async (msg) => {
   const chatId = msg.chat.id;
   if (!GROQ_KEY) {
-    return bot.sendMessage(
-      chatId,
-      "❌ AI-ревью отключён. Подключить бесплатно:\n\n" +
-      "1. Зайди на https://console.groq.com → Sign up\n" +
-      "2. Нажми API Keys → Create API Key\n" +
-      "3. Скопируй ключ\n" +
-      "4. На Render → Environment → GROQ_API_KEY = твой ключ\n" +
-      "5. Save Changes → Manual Deploy\n\n" +
-      "Это полностью бесплатно, карта не нужна.",
-    );
+    return bot.sendMessage(chatId, lang(chatId).review_no_key);
   }
 
   if (msg.reply_to_message && msg.reply_to_message.photo) {
     await reviewImage(chatId, msg.reply_to_message.photo);
   } else {
-    bot.sendMessage(
-      chatId,
-      "📸 Отправь скриншот дизайна и ответь на него /review\n\n" +
-      "Я оценю по 100-бальной шкале, найду плюсы и минусы.",
-    );
+    bot.sendMessage(chatId, lang(chatId).review_intro);
   }
 });
 
 async function reviewImage(chatId, photos) {
-  const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
+  const l = lang(chatId);
+  const waitMsg = await bot.sendMessage(chatId, l.review_wait);
 
   try {
     const photo = photos[photos.length - 1];
@@ -523,7 +718,7 @@ async function reviewImage(chatId, photos) {
             content: [
               {
                 type: "text",
-                text: "Ты senior дизайнер. Оцени дизайн на фото. Пиши ТОЛЬКО на русском языке. НИ СЛОВА на английском. Без звездочек. Формат ответа:\n\nОценка: число из 100\n\nОшибки:\nсписок ошибок\n\nПлюсы:\nсписок плюсов\n\nРекомендации:\nчто исправить",
+                text: l.review_prompt,
               },
               {
                 type: "image_url",
@@ -545,7 +740,7 @@ async function reviewImage(chatId, photos) {
     );
 
     if (!result.data?.choices?.[0]?.message?.content) {
-      throw new Error("Пустой ответ от Groq");
+      throw new Error(l.empty_response);
     }
 
     const text = result.data.choices[0].message.content;
@@ -564,9 +759,9 @@ async function reviewImage(chatId, photos) {
       await bot.sendMessage(chatId, text);
     }
   } catch (err) {
-    const errMsg = err.response?.data?.error?.message || err.message || "Неизвестная ошибка";
+    const errMsg = err.response?.data?.error?.message || err.message || l.server_error;
     try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
-    await bot.sendMessage(chatId, `❌ Ошибка: ${errMsg}`);
+    await bot.sendMessage(chatId, `${l.review_err}: ${errMsg}`);
     console.error("Review error:", JSON.stringify(err.response?.data || err.message));
   }
 }
@@ -581,12 +776,13 @@ function sendQuestion(chatId) {
   const session = quizSessions.get(chatId);
   if (!session || session.index >= session.questions.length) return finishQuiz(chatId);
 
+  const l = lang(chatId);
   const q = session.questions[session.index];
   const buttons = q.options.map((opt, i) => [{ text: opt, callback_data: `quiz_${session.index}_${i}` }]);
 
   bot.sendMessage(
     chatId,
-    `🧠 <b>Вопрос ${session.index + 1}/${session.questions.length}</b>\n\n${q.q}\n\nПравильно: ${session.correct}/${session.index}`,
+    `🧠 <b>${l.quiz_question} ${session.index + 1}/${session.questions.length}</b>\n\n${q.q}\n\n${l.correct}: ${session.correct}/${session.index}`,
     { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } },
   );
 }
@@ -595,43 +791,46 @@ function finishQuiz(chatId) {
   const session = quizSessions.get(chatId);
   const total = session ? session.questions.length : 0;
   const correct = session ? session.correct : 0;
+  const l = lang(chatId);
   quizSessions.delete(chatId);
 
-  let grade = "🤡";
-  if (correct === total) grade = "🏆 Дизайн-бог!";
-  else if (correct >= total * 0.8) grade = "🔥 Отлично!";
-  else if (correct >= total * 0.6) grade = "👍 Неплохо";
-  else if (correct >= total * 0.4) grade = "📚 Учи матчасть";
+  let grade = l.grade_bot;
+  if (correct === total) grade = l.grade_god;
+  else if (correct >= total * 0.8) grade = l.grade_awesome;
+  else if (correct >= total * 0.6) grade = l.grade_good;
+  else if (correct >= total * 0.4) grade = l.grade_study;
 
-  bot.sendMessage(chatId, `🧠 <b>Квиз завершён!</b>\n\nПравильно: ${correct}/${total}\n\n${grade}`, { parse_mode: "HTML" });
+  bot.sendMessage(chatId, `🧠 <b>${l.quiz_done}</b>\n\n${l.correct}: ${correct}/${total}\n\n${grade}`, { parse_mode: "HTML" });
 }
 
 function showSavedList(chatId) {
+  const l = lang(chatId);
   const list = savedBriefs.get(chatId) || [];
-  if (list.length === 0) return bot.sendMessage(chatId, "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить");
+  if (list.length === 0) return bot.sendMessage(chatId, l.saved_none);
 
-  const buttons = list.map((_, i) => [{ text: `ТЗ #${i + 1}`, callback_data: `saved_show_${i}` }]);
-  bot.sendMessage(chatId, `📂 <b>Мои сохранёнки</b> (${list.length}/20)`, {
+  const buttons = list.map((_, i) => [{ text: `${l.brief} #${i + 1}`, callback_data: `saved_show_${i}` }]);
+  bot.sendMessage(chatId, `📂 <b>${l.saved_title}</b> (${list.length}/20)`, {
     parse_mode: "HTML",
     reply_markup: { inline_keyboard: buttons },
   });
 }
 
 function showStats(chatId) {
+  const l = lang(chatId);
   const stats = getStats(chatId);
   const byType = Object.entries(stats.byType).sort((a, b) => b[1] - a[1]);
-  const topTypes = byType.slice(0, 8).map(([type, count]) => `• ${type}: ${count}`).join("\n") || "• Пока нет";
+  const topTypes = byType.slice(0, 8).map(([type, count]) => `• ${type}: ${count}`).join("\n") || l.no_stats;
   const avgScore = stats.reviews.length
     ? Math.round(stats.reviews.reduce((a, b) => a + b, 0) / stats.reviews.length)
     : "—";
 
   bot.sendMessage(
     chatId,
-    `📊 <b>Моя статистика</b>\n\n` +
-    `Всего ТЗ: <b>${stats.total}</b>\n` +
-    `Оценено работ: <b>${stats.reviews.length}</b>\n` +
-    `Средняя оценка: <b>${avgScore}/100</b>\n\n` +
-    `📋 <b>По типам:</b>\n${topTypes}`,
+    `📊 <b>${l.stats_title}</b>\n\n` +
+    `${l.stats_total}: <b>${stats.total}</b>\n` +
+    `${l.stats_reviewed}: <b>${stats.reviews.length}</b>\n` +
+    `${l.stats_avg}: <b>${avgScore}/100</b>\n\n` +
+    `📋 <b>${l.stats_by_type}:</b>\n${topTypes}`,
     { parse_mode: "HTML" },
   );
 }
@@ -643,8 +842,15 @@ bot.on("callback_query", (query) => {
 
   bot.answerCallbackQuery(query.id);
 
-  if (data === "start") {
-    bot.editMessageText(startText, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...startKeyboard() });
+  if (data === "lang_ru" || data === "lang_en" || data === "lang_es") {
+    const code = data.split("_")[1];
+    userLang.set(chatId, code);
+    const l = lang(chatId);
+    bot.editMessageText(l.lang_changed, { chat_id: chatId, message_id: msgId });
+    bot.sendMessage(chatId, l.start, { parse_mode: "HTML", ...langKeyboard(chatId) });
+  } else if (data === "start") {
+    const l = lang(chatId);
+    bot.editMessageText(l.start, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...langKeyboard(chatId) });
   } else if (data === "cb_brief") {
     const result = generateBrief("middle");
     const stats = getStats(chatId);
@@ -653,15 +859,17 @@ bot.on("callback_query", (query) => {
     lastBrief.set(chatId, result.text);
     bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
   } else if (data === "cb_palette") {
+    const l = lang(chatId);
     const [name, ...colors] = pick(PALETTES);
     const hex = colors.map((c) => `• <code>${c}</code>`).join("\n");
-    bot.editMessageText(`🎨 <b>${name}</b>\n\n${hex}\n\n<i>Скопируй hex и вставь в Figma!</i>`,
+    bot.editMessageText(`🎨 <b>${name}</b>\n\n${hex}\n\n<i>${l.palette_send}</i>`,
       { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
   } else if (data === "cb_challenge") {
-    bot.editMessageText(`🎯 <b>Челендж</b>\n\n${pick(CHALLENGES)}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+    const l = lang(chatId);
+    bot.editMessageText(`${l.challenge_title}\n\n${pick(CHALLENGES)}\n\n<i>${l.challenge_hint}</i>`,
       { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
   } else if (data === "cb_quiz") {
-    bot.editMessageText("🧠 Начинаем квиз!", { chat_id: chatId, message_id: msgId });
+    bot.editMessageText(lang(chatId).quiz_start, { chat_id: chatId, message_id: msgId });
     startQuiz(chatId);
   } else if (data === "cb_stats") {
     showStats(chatId);
@@ -671,7 +879,7 @@ bot.on("callback_query", (query) => {
     stats.total++;
     stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
     lastBrief.set(chatId, result.text);
-    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
+    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard(chatId, "middle") });
   } else if (data.startsWith("diff_")) {
     const diff = data.split("_")[1];
     const result = generateBrief(diff);
@@ -679,33 +887,36 @@ bot.on("callback_query", (query) => {
     stats.total++;
     stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
     lastBrief.set(chatId, result.text);
-    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard(diff) });
+    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard(chatId, diff) });
   } else if (data === "save_last") {
+    const l = lang(chatId);
     const brief = lastBrief.get(chatId);
-    if (!brief) return bot.sendMessage(chatId, "Нет ТЗ для сохранения");
+    if (!brief) return bot.sendMessage(chatId, l.save_first);
     if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
     const list = savedBriefs.get(chatId);
-    if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок");
-    if (list.includes(brief)) return bot.sendMessage(chatId, "Уже сохранено");
+    if (list.length >= 20) return bot.sendMessage(chatId, l.saved_max);
+    if (list.includes(brief)) return bot.sendMessage(chatId, l.saved_dup);
     list.push(brief);
-    bot.sendMessage(chatId, "✅ ТЗ сохранено!");
+    bot.sendMessage(chatId, l.saved_done);
   } else if (data === "saved_list") {
     showSavedList(chatId);
   } else if (data.startsWith("saved_show_")) {
+    const l = lang(chatId);
     const idx = parseInt(data.split("_")[2]);
     const list = savedBriefs.get(chatId) || [];
-    if (!list[idx]) return bot.sendMessage(chatId, "ТЗ не найдено");
+    if (!list[idx]) return bot.sendMessage(chatId, l.saved_notfound);
     bot.sendMessage(chatId, list[idx], {
       parse_mode: "HTML",
       reply_markup: { inline_keyboard: [[{ text: "🗑 Удалить", callback_data: `saved_del_${idx}` }]] },
     });
   } else if (data.startsWith("saved_del_")) {
+    const l = lang(chatId);
     const idx = parseInt(data.split("_")[2]);
     const list = savedBriefs.get(chatId);
-    if (!list || !list[idx]) return bot.sendMessage(chatId, "ТЗ не найдено");
+    if (!list || !list[idx]) return bot.sendMessage(chatId, l.saved_notfound);
     list.splice(idx, 1);
     if (list.length === 0) savedBriefs.delete(chatId);
-    bot.sendMessage(chatId, "🗑 Удалено!");
+    bot.sendMessage(chatId, l.saved_del);
   } else if (data.startsWith("quiz_")) {
     const parts = data.split("_");
     const qIdx = parseInt(parts[1]);

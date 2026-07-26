@@ -1,8 +1,10 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const http = require("http");
+const axios = require("axios");
 
 const TOKEN = process.env.BOT_TOKEN;
+const GROQ_KEY = process.env.GROQ_API_KEY;
 if (!TOKEN) {
   console.error("❌ BOT_TOKEN не найден");
   process.exit(1);
@@ -15,9 +17,16 @@ http.createServer((_, res) => res.end("Bot is running")).listen(PORT, () => {
   console.log(`🌐 Health check server on port ${PORT}`);
 });
 
+if (GROQ_KEY) {
+  console.log("🤖 AI-ревью подключено (Groq)");
+} else {
+  console.log("⚠️ GROQ_API_KEY не задан — /review недоступен");
+}
+
 const savedBriefs = new Map();
 const lastBrief = new Map();
 const quizSessions = new Map();
+const userStats = new Map();
 
 const PROJECT_TYPES = [
   "Логотип", "Фирменный стиль", "Сайт (лендинг)", "Сайт (многостраничный)",
@@ -156,7 +165,7 @@ const CHALLENGES = [
   "Разработай дизайн email-рассылки для стартапа.",
   "Сделай UI для экрана чата в мессенджере.",
   "Нарисуй плашку для Twitch стримера.",
-  "Спроектируй дизайн для страницы «О нас».", 
+  "Спроектируй дизайн для страницы «О нас».",
   "Сделай 3 варианта лендинга для одной секции.",
   "Разработай дизайн системы уведомлений (toast, snackbar, alert).",
   "Нарисуй стикерпак из 6 стикеров для Telegram.",
@@ -257,10 +266,8 @@ const QUIZ_QUESTIONS = [
   { q: "Что такое атомарный дизайн?", options: ["Дизайн по атомам-молекулам-организмам", "Минимализм", "Сетка", "Анимация"], answer: 0 },
   { q: "Сколько этапов в дизайн-мышлении?", options: ["3", "5", "7", "4"], answer: 1 },
   { q: "Кто создал брендбук IBM?", options: ["Пол Рэнд", "Дитер Рамс", "Милтон Глейзер", "Сол Басс"], answer: 0 },
-  { q: "Какой плагин для генерации контента в Figma?", options: ["Unsplash", "Content Reel", "Map Maker", "All"], answer: 3 },
   { q: "Что такое breakpoint в веб-дизайне?", options: ["Точка поломки", "Контрольная точка адаптива", "Размер шрифта", "Цвет"], answer: 1 },
   { q: "Какая программа для 3D-моделирования в дизайне?", options: ["Blender", "Figma", "Sketch", "Adobe XD"], answer: 0 },
-  { q: "Что такое Bootstrap?", options: ["Дизайн-система", "CSS-фреймворк", "Язык", "Плагин"], answer: 1 },
   { q: "Кто создал первый смайлик :-)", options: ["Скотт Фалман", "Харви Болл", "Шигетака Курита", "Тим Бернерс-Ли"], answer: 0 },
   { q: "Что такое color theory?", options: ["Теория сочетания цветов", "Палитра", "Градиент", "Цветовой круг"], answer: 0 },
   { q: "Сколько базовых цветов в цветовом круге Иттена?", options: ["6", "8", "12", "3"], answer: 2 },
@@ -268,11 +275,7 @@ const QUIZ_QUESTIONS = [
   { q: "Какое минимальное соотношение контрастности для текста WCAG?", options: ["2:1", "4.5:1", "3:1", "7:1"], answer: 1 },
   { q: "Что делает опция «Clip Content» в Figma?", options: ["Обрезает контент по границе", "Копирует слой", "Вставляет", "Группирует"], answer: 0 },
   { q: "Какой формат у файлов Figma?", options: [".figma", ".fig", ".sketch", ".xd"], answer: 1 },
-  { q: "Что такое Bootstrap Icons?", options: ["Библиотека иконок", "Шрифт", "Плагин", "Темы"], answer: 0 },
-  { q: "Как часто выходят новые версии iOS Human Interface?", options: ["Каждый год", "Каждые полгода", "Каждый квартал", "Раз в месяц"], answer: 0 },
-  { q: "Что такое дизайн-система?", options: ["Набор правил и компонентов", "Тема оформления", "Шрифт", "Программа"], answer: 0 },
   { q: "Кто разработал шрифт Inter?", options: ["Google", "Rasmus Andersson", "Apple", "Adobe"], answer: 1 },
-  { q: "Какой плагин Figma для иконок?", options: ["Iconify", "Feather Icons", "Material Icons", "Все"], answer: 3 },
   { q: "Что такое storyboard?", options: ["Сценарий с раскадровкой", "Доска задач", "Список идей", "Презентация"], answer: 0 },
   { q: "Какая высота строки (line-height) оптимальна для текста?", options: ["100%", "120-140%", "150-170%", "200%"], answer: 1 },
   { q: "Что такое moodboard?", options: ["Коллаж референсов и вдохновения", "Инструмент для рисования", "Тип шрифта", "Плагин"], answer: 0 },
@@ -290,8 +293,58 @@ const QUIZ_QUESTIONS = [
   { q: "Что такое Boolean Group в Figma?", options: ["Группа с масками", "Объединение фигур", "Группа слоёв", "Авто-лейаут"], answer: 1 },
 ];
 
+const PALETTES = [
+  ["🌊 Океан", "#006d77", "#83c5be", "#edf6f9", "#ffddd2", "#e29578"],
+  ["🌅 Закат", "#ff6b6b", "#ffa07a", "#ffd93d", "#6bcb77", "#4d96ff"],
+  ["🌿 Лес", "#2d6a4f", "#40916c", "#52b788", "#95d5b2", "#d8f3dc"],
+  ["🍂 Осень", "#5c4033", "#8b5a2b", "#d4a373", "#faedcd", "#fefae0"],
+  ["🌸 Сакура", "#ffb7c5", "#ff8fab", "#fb6f92", "#c9184a", "#800f2f"],
+  ["🌌 Космос", "#0b090a", "#161a1d", "#660708", "#a4161a", "#e5383b"],
+  ["🍋 Цитрус", "#f9c74f", "#f9844a", "#f94144", "#90be6d", "#577590"],
+  ["❄️ Арктика", "#caf0f8", "#ade8f4", "#48cae4", "#0077b6", "#03045e"],
+  ["🍄 Земля", "#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"],
+  ["💎 Сапфир", "#03045e", "#0077b6", "#00b4d8", "#90e0ef", "#caf0f8"],
+  ["🌺 Тропики", "#f72585", "#b5179e", "#7209b7", "#560bad", "#480ca8"],
+  ["🍯 Мёд", "#ffcdb2", "#ffb4a2", "#e5989b", "#b5828c", "#6d6875"],
+  ["🌿 Мята", "#e8f5e9", "#c8e6c9", "#a5d6a7", "#81c784", "#66bb6a"],
+  ["🏖️ Пляж", "#f6bd60", "#f7ede2", "#f5cac3", "#84a59d", "#f28482"],
+  ["🍇 Вино", "#2d00f7", "#6a00f5", "#9d00f5", "#b100e8", "#bc00dd"],
+  ["🌲 Хвоя", "#1b4332", "#2d6a4f", "#40916c", "#52b788", "#74c69d"],
+  ["☕ Кофе", "#3e2723", "#4e342e", "#5d4037", "#6d4c41", "#795548"],
+  ["🌈 Пастель", "#f8edeb", "#f9dcc4", "#fec89a", "#fcd5ce", "#e8e8e4"],
+  ["🦩 Фламинго", "#ffeddf", "#ffc8bd", "#ff9f9b", "#fd7b7e", "#cd5c5c"],
+  ["🏛️ Античный", "#e3d5ca", "#d6ccc2", "#c8b6a0", "#a4937c", "#7d6b55"],
+  ["🔮 Неон", "#ff0054", "#ff6b35", "#ffd23f", "#06d6a0", "#118ab2"],
+  ["🌾 Лаванда", "#e8daef", "#d7bde2", "#c39bd3", "#af7ac5", "#9b59b6"],
+  ["🍎 Apple", "#f5f5f5", "#e0e0e0", "#9e9e9e", "#616161", "#212121"],
+  ["🎮 Игровой", "#ff3366", "#ff6633", "#ffcc00", "#33cc66", "#3366ff"],
+  ["🧀 Тёплый", "#fff3e0", "#ffe0b2", "#ffcc80", "#ffb74d", "#ffa726"],
+  ["🌙 Ночь", "#0d1b2a", "#1b2838", "#1b3a4b", "#2d5a6b", "#4a8a9a"],
+  ["🍑 Персик", "#ffdbd3", "#ffc8bd", "#ffb4a2", "#ff9f8c", "#ff8a75"],
+  ["🌋 Лава", "#2b0000", "#4a0000", "#8b0000", "#cc0000", "#ff4500"],
+  ["💐 Весна", "#fcf6f5", "#fde2e4", "#fad2e1", "#c5dedd", "#dbe7e4"],
+  ["🧊 Лёд", "#e3f2fd", "#bbdefb", "#90caf9", "#64b5f6", "#42a5f5"],
+  ["🌵 Пустыня", "#edd4b2", "#d0a98f", "#c38370", "#a35d4a", "#7a3b2e"],
+  ["🎪 Цирк", "#ff0000", "#ffff00", "#0000ff", "#00ff00", "#ffffff"],
+  ["🍬 Карамель", "#ffecd2", "#fcb69f", "#f8a07e", "#e8845a", "#d4684a"],
+  ["🌴 Джунгли", "#004d40", "#00695c", "#00897b", "#26a69a", "#4db6ac"],
+  ["🖤 Монохром", "#000000", "#333333", "#666666", "#999999", "#cccccc"],
+  ["🥂 Шампань", "#f7e7ce", "#eedcc7", "#e4ceb5", "#d8bfa8", "#c9ad93"],
+  ["🚀 Футуризм", "#0a0a23", "#1a1a4e", "#2a2a7e", "#3a3aaf", "#4a4adf"],
+  ["🪸 Коралл", "#ff6f61", "#ff8a7a", "#ffa594", "#ffc1b0", "#ffdccd"],
+  ["🌊 Бирюза", "#008080", "#20b2aa", "#48d1cc", "#7fffd4", "#b0e0e6"],
+  ["🍫 Шоколад", "#3c1e0e", "#5c2e0e", "#7c3e0e", "#9c4e0e", "#bc5e0e"],
+];
+
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getStats(chatId) {
+  if (!userStats.has(chatId)) {
+    userStats.set(chatId, { total: 0, byType: {}, reviews: [], scores: [] });
+  }
+  return userStats.get(chatId);
 }
 
 function generateBrief(difficulty = "middle") {
@@ -307,27 +360,29 @@ function generateBrief(difficulty = "middle") {
   const diffText = DIFFICULTIES[difficulty];
   const now = new Date().toLocaleString("ru-RU");
 
-  return (
-    "📋 <b>ТЕХНИЧЕСКОЕ ЗАДАНИЕ</b>\n" +
-    "━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-    `<b>Тип проекта:</b> ${project}\n` +
-    `<b>Бренд:</b> ${brandName} — ${brandDesc}\n` +
-    `<b>Индустрия:</b> ${industry}\n` +
-    `<b>Сложность:</b> ${diffText}\n` +
-    `<b>Срок:</b> ${deadline}\n\n` +
-    "🎨 <b>СТИЛЬ И ВИЗУАЛ</b>\n" +
-    `• Направление: ${style}\n` +
-    `• Цвета: ${colors}\n` +
-    `• Настроение: ${mood}\n\n` +
-    "📝 <b>ТРЕБОВАНИЯ</b>\n" +
-    `• ${reqs.join("\n• ")}\n\n` +
-    "💎 <b>ОСОБЕННОСТЬ</b>\n" +
-    `• ${bonus}\n\n` +
-    `<b>Контекст:</b> Это реальный проект для вымышленного стартапа. Дизайн должен решать бизнес-задачу: привлечь ЦА и выделиться на рынке ${industry.toLowerCase()}.\n\n` +
-    "<b>Подсказка:</b> Не бойся экспериментировать — это тренировка!\n\n" +
-    "━━━━━━━━━━━━━━━━━━━━━━\n" +
-    `🕒 Сгенерировано: ${now}`
-  );
+  return {
+    project,
+    text:
+      "📋 <b>ТЕХНИЧЕСКОЕ ЗАДАНИЕ</b>\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      `<b>Тип проекта:</b> ${project}\n` +
+      `<b>Бренд:</b> ${brandName} — ${brandDesc}\n` +
+      `<b>Индустрия:</b> ${industry}\n` +
+      `<b>Сложность:</b> ${diffText}\n` +
+      `<b>Срок:</b> ${deadline}\n\n` +
+      "🎨 <b>СТИЛЬ И ВИЗУАЛ</b>\n" +
+      `• Направление: ${style}\n` +
+      `• Цвета: ${colors}\n` +
+      `• Настроение: ${mood}\n\n` +
+      "📝 <b>ТРЕБОВАНИЯ</b>\n" +
+      `• ${reqs.join("\n• ")}\n\n` +
+      "💎 <b>ОСОБЕННОСТЬ</b>\n" +
+      `• ${bonus}\n\n` +
+      `<b>Контекст:</b> Это реальный проект для вымышленного стартапа. Дизайн должен решать бизнес-задачу: привлечь ЦА и выделиться на рынке ${industry.toLowerCase()}.\n\n` +
+      "<b>Подсказка:</b> Не бойся экспериментировать — это тренировка!\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━\n" +
+      `🕒 Сгенерировано: ${now}`,
+  };
 }
 
 function briefKeyboard(difficulty) {
@@ -352,9 +407,9 @@ function startKeyboard() {
   return {
     reply_markup: {
       inline_keyboard: [
-        [{ text: "📋 ТЗ", callback_data: "cb_brief" }, { text: "🎯 Челендж", callback_data: "cb_challenge" }],
-        [{ text: "🧠 Квиз", callback_data: "cb_quiz" }, { text: "📂 Сохранёнки", callback_data: "saved_list" }],
-        [{ text: "🔄 Новое ТЗ", callback_data: "new" }],
+        [{ text: "📋 ТЗ", callback_data: "cb_brief" }, { text: "🎨 Палитра", callback_data: "cb_palette" }],
+        [{ text: "🎯 Челендж", callback_data: "cb_challenge" }, { text: "🧠 Квиз", callback_data: "cb_quiz" }],
+        [{ text: "📊 Статистика", callback_data: "cb_stats" }, { text: "📂 Сохранёнки", callback_data: "saved_list" }],
       ],
     },
   };
@@ -363,10 +418,13 @@ function startKeyboard() {
 const startText =
   "🎨 <b>Design Brief Bot</b>\n\nПривет! Я помогаю дизайнерам прокачиваться.\n\n" +
   "📋 /brief — случайное ТЗ\n" +
-  "🎯 /challenge — задание на сегодня\n" +
+  "🎨 /palette — цветовая палитра\n" +
+  "🎯 /challenge — задание\n" +
   "🧠 /quiz — проверить знания\n" +
+  "📊 /stats — моя статистика\n" +
   "💾 /save — сохранить ТЗ\n" +
-  "📂 /saved — мои сохранёнки\n\n" +
+  "📂 /saved — мои сохранёнки\n" +
+  "📸 /review — отправить работу на оценку\n\n" +
   "<i>Выбери что хочешь 👇</i>";
 
 bot.onText(/\/start/, (msg) => {
@@ -381,9 +439,13 @@ bot.onText(/\/brief(.+)?/, (msg, match) => {
   const arg = (match[1] || "").trim().toLowerCase();
   let diff = "middle";
   if (["junior", "middle", "senior"].includes(arg)) diff = arg;
-  const brief = generateBrief(diff);
-  lastBrief.set(chatId, brief);
-  bot.sendMessage(chatId, brief, { parse_mode: "HTML", ...briefKeyboard(diff) });
+  const result = generateBrief(diff);
+  const stats = getStats(chatId);
+  stats.total++;
+  stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
+
+  lastBrief.set(chatId, result.text);
+  bot.sendMessage(chatId, result.text, { parse_mode: "HTML", ...briefKeyboard(diff) });
 });
 
 bot.onText(/\/save/, (msg) => {
@@ -392,25 +454,110 @@ bot.onText(/\/save/, (msg) => {
   if (!brief) return bot.sendMessage(chatId, "Сначала сгенерируй ТЗ через /brief");
   if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
   const list = savedBriefs.get(chatId);
-  if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок. Удали одну через /saved");
-  if (list.includes(brief)) return bot.sendMessage(chatId, "Это ТЗ уже сохранено");
+  if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок");
+  if (list.includes(brief)) return bot.sendMessage(chatId, "Уже сохранено");
   list.push(brief);
   bot.sendMessage(chatId, "✅ ТЗ сохранено!");
 });
 
 bot.onText(/\/saved/, (msg) => showSavedList(msg.chat.id));
 
+bot.onText(/\/stats/, (msg) => showStats(msg.chat.id));
+
+bot.onText(/\/palette/, (msg) => {
+  const [name, ...colors] = pick(PALETTES);
+  const hex = colors.map((c) => `• <code>${c}</code>`).join("\n");
+  bot.sendMessage(msg.chat.id, `🎨 <b>${name}</b>\n\n${hex}\n\n<i>Скопируй hex и вставь в Figma!</i>`, { parse_mode: "HTML" });
+});
+
 bot.onText(/\/challenge/, (msg) => {
-  const chatId = msg.chat.id;
-  const challenge = pick(CHALLENGES);
-  bot.sendMessage(
-    chatId,
-    `🎯 <b>Челендж</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
-    { parse_mode: "HTML" },
-  );
+  bot.sendMessage(msg.chat.id, `🎯 <b>Челендж</b>\n\n${pick(CHALLENGES)}\n\n<i>Сделай и закрепи результат в портфолио!</i>`, { parse_mode: "HTML" });
 });
 
 bot.onText(/\/quiz/, (msg) => startQuiz(msg.chat.id));
+
+bot.onText(/\/review/, async (msg) => {
+  const chatId = msg.chat.id;
+  if (!GROQ_KEY) {
+    return bot.sendMessage(
+      chatId,
+      "❌ AI-ревью отключён. Подключить бесплатно:\n\n" +
+      "1. Зайди на https://console.groq.com → Sign up\n" +
+      "2. Нажми API Keys → Create API Key\n" +
+      "3. Скопируй ключ\n" +
+      "4. На Render → Environment → GROQ_API_KEY = твой ключ\n" +
+      "5. Save Changes → Manual Deploy\n\n" +
+      "Это полностью бесплатно, карта не нужна.",
+    );
+  }
+
+  if (msg.reply_to_message && msg.reply_to_message.photo) {
+    await reviewImage(chatId, msg.reply_to_message.photo);
+  } else {
+    bot.sendMessage(
+      chatId,
+      "📸 Отправь скриншот дизайна и ответь на него /review\n\n" +
+      "Я оценю по 100-бальной шкале, найду плюсы и минусы.",
+    );
+  }
+});
+
+async function reviewImage(chatId, photos) {
+  const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
+
+  try {
+    const photo = photos[photos.length - 1];
+    const file = await bot.getFile(photo.file_id);
+    const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`;
+    const resp = await axios.get(fileUrl, { responseType: "arraybuffer" });
+    const base64 = Buffer.from(resp.data).toString("base64");
+    const mimeType = file.file_path.endsWith(".png") ? "image/png" : "image/jpeg";
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+
+    const result = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama-3.2-90b-vision-preview",
+        messages: [
+          {
+            role: "system",
+            content: "Ты — senior дизайнер с 10-летним опытом. Анализируй дизайн и давай структурированную обратную связь на русском языке.",
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Проанализируй этот дизайн. Оцени по 100-бальной шкале (композиция, цвета, типографика, иерархия, отступы, общее впечатление). Найди 3-4 плюса, 2-3 минуса и дай 2-3 рекомендации.\n\nФормат ответа строго:\n📊 ОЦЕНКА: X/100\n\n✅ ПЛЮСЫ:\n• ...\n\n❌ МИНУСЫ:\n• ...\n\n💡 РЕКОМЕНДАЦИИ:\n• ...",
+              },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+        max_tokens: 1000,
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${GROQ_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const text = result.data.choices[0].message.content;
+    const scoreMatch = text.match(/(\d+)\s*\/\s*100/);
+    if (scoreMatch) {
+      const stats = getStats(chatId);
+      stats.reviews.push(parseInt(scoreMatch[1]));
+    }
+
+    await bot.deleteMessage(chatId, waitMsg.message_id);
+    await bot.sendMessage(chatId, text, { parse_mode: "HTML" });
+  } catch (err) {
+    await bot.deleteMessage(chatId, waitMsg.message_id);
+    await bot.sendMessage(chatId, `❌ Ошибка: ${err.response?.data?.error?.message || err.message}`);
+  }
+}
 
 function startQuiz(chatId) {
   const shuffled = [...QUIZ_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 6);
@@ -423,9 +570,7 @@ function sendQuestion(chatId) {
   if (!session || session.index >= session.questions.length) return finishQuiz(chatId);
 
   const q = session.questions[session.index];
-  const buttons = q.options.map((opt, i) => [
-    { text: opt, callback_data: `quiz_${session.index}_${i}` },
-  ]);
+  const buttons = q.options.map((opt, i) => [{ text: opt, callback_data: `quiz_${session.index}_${i}` }]);
 
   bot.sendMessage(
     chatId,
@@ -449,6 +594,36 @@ function finishQuiz(chatId) {
   bot.sendMessage(chatId, `🧠 <b>Квиз завершён!</b>\n\nПравильно: ${correct}/${total}\n\n${grade}`, { parse_mode: "HTML" });
 }
 
+function showSavedList(chatId) {
+  const list = savedBriefs.get(chatId) || [];
+  if (list.length === 0) return bot.sendMessage(chatId, "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить");
+
+  const buttons = list.map((_, i) => [{ text: `ТЗ #${i + 1}`, callback_data: `saved_show_${i}` }]);
+  bot.sendMessage(chatId, `📂 <b>Мои сохранёнки</b> (${list.length}/20)`, {
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: buttons },
+  });
+}
+
+function showStats(chatId) {
+  const stats = getStats(chatId);
+  const byType = Object.entries(stats.byType).sort((a, b) => b[1] - a[1]);
+  const topTypes = byType.slice(0, 8).map(([type, count]) => `• ${type}: ${count}`).join("\n") || "• Пока нет";
+  const avgScore = stats.reviews.length
+    ? Math.round(stats.reviews.reduce((a, b) => a + b, 0) / stats.reviews.length)
+    : "—";
+
+  bot.sendMessage(
+    chatId,
+    `📊 <b>Моя статистика</b>\n\n` +
+    `Всего ТЗ: <b>${stats.total}</b>\n` +
+    `Оценено работ: <b>${stats.reviews.length}</b>\n` +
+    `Средняя оценка: <b>${avgScore}/100</b>\n\n` +
+    `📋 <b>По типам:</b>\n${topTypes}`,
+    { parse_mode: "HTML" },
+  );
+}
+
 bot.on("callback_query", (query) => {
   const data = query.data;
   const chatId = query.message.chat.id;
@@ -459,25 +634,40 @@ bot.on("callback_query", (query) => {
   if (data === "start") {
     bot.editMessageText(startText, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...startKeyboard() });
   } else if (data === "cb_brief") {
-    const brief = generateBrief("middle");
-    lastBrief.set(chatId, brief);
-    bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
+    const result = generateBrief("middle");
+    const stats = getStats(chatId);
+    stats.total++;
+    stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
+    lastBrief.set(chatId, result.text);
+    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
+  } else if (data === "cb_palette") {
+    const [name, ...colors] = pick(PALETTES);
+    const hex = colors.map((c) => `• <code>${c}</code>`).join("\n");
+    bot.editMessageText(`🎨 <b>${name}</b>\n\n${hex}\n\n<i>Скопируй hex и вставь в Figma!</i>`,
+      { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
   } else if (data === "cb_challenge") {
-    const challenge = pick(CHALLENGES);
-    bot.editMessageText(`🎯 <b>Челендж</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+    bot.editMessageText(`🎯 <b>Челендж</b>\n\n${pick(CHALLENGES)}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
       { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
   } else if (data === "cb_quiz") {
     bot.editMessageText("🧠 Начинаем квиз!", { chat_id: chatId, message_id: msgId });
     startQuiz(chatId);
+  } else if (data === "cb_stats") {
+    showStats(chatId);
   } else if (data === "new") {
-    const brief = generateBrief("middle");
-    lastBrief.set(chatId, brief);
-    bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
+    const result = generateBrief("middle");
+    const stats = getStats(chatId);
+    stats.total++;
+    stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
+    lastBrief.set(chatId, result.text);
+    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
   } else if (data.startsWith("diff_")) {
     const diff = data.split("_")[1];
-    const brief = generateBrief(diff);
-    lastBrief.set(chatId, brief);
-    bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard(diff) });
+    const result = generateBrief(diff);
+    const stats = getStats(chatId);
+    stats.total++;
+    stats.byType[result.project] = (stats.byType[result.project] || 0) + 1;
+    lastBrief.set(chatId, result.text);
+    bot.editMessageText(result.text, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard(diff) });
   } else if (data === "save_last") {
     const brief = lastBrief.get(chatId);
     if (!brief) return bot.sendMessage(chatId, "Нет ТЗ для сохранения");
@@ -516,21 +706,9 @@ bot.on("callback_query", (query) => {
     if (isCorrect) session.correct++;
 
     bot.sendMessage(chatId, isCorrect ? "✅ Верно!" : `❌ Неверно. Правильный ответ: ${q.options[q.answer]}`);
-
     session.index++;
     sendQuestion(chatId);
   }
 });
-
-function showSavedList(chatId) {
-  const list = savedBriefs.get(chatId) || [];
-  if (list.length === 0) return bot.sendMessage(chatId, "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить");
-
-  const buttons = list.map((_, i) => [{ text: `ТЗ #${i + 1}`, callback_data: `saved_show_${i}` }]);
-  bot.sendMessage(chatId, `📂 <b>Мои сохранёнки</b> (${list.length}/20)`, {
-    parse_mode: "HTML",
-    reply_markup: { inline_keyboard: buttons },
-  });
-}
 
 console.log("🤖 Design Brief Bot запущен");

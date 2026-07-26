@@ -534,7 +534,7 @@ async function reviewImage(chatId, photos) {
             ],
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 500,
       },
       {
         headers: {
@@ -556,7 +556,13 @@ async function reviewImage(chatId, photos) {
     }
 
     try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
-    await bot.sendMessage(chatId, text);
+    if (text.length > 4000) {
+      for (let i = 0; i < text.length; i += 4000) {
+        await bot.sendMessage(chatId, text.slice(i, i + 4000));
+      }
+    } else {
+      await bot.sendMessage(chatId, text);
+    }
   } catch (err) {
     const errMsg = err.response?.data?.error?.message || err.message || "Неизвестная ошибка";
     try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}

@@ -512,7 +512,6 @@ async function reviewImage(chatId, photos) {
     const resp = await axios.get(fileUrl, { responseType: "arraybuffer" });
     const base64 = Buffer.from(resp.data).toString("base64");
     const mimeType = file.file_path.endsWith(".png") ? "image/png" : "image/jpeg";
-    const dataUrl = `data:${mimeType};base64,${base64}`;
 
     const result = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
@@ -520,21 +519,22 @@ async function reviewImage(chatId, photos) {
         model: "qwen/qwen3.6-27b",
         messages: [
           {
-            role: "system",
-            content: "Ты — senior дизайнер с 10-летним опытом. Анализируй дизайн и давай структурированную обратную связь на русском языке.",
-          },
-          {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Проанализируй этот дизайн. Оцени по 100-бальной шкале (композиция, цвета, типографика, иерархия, отступы, общее впечатление). Найди 3-4 плюса, 2-3 минуса и дай 2-3 рекомендации.\n\nФормат ответа строго:\n📊 ОЦЕНКА: X/100\n\n✅ ПЛЮСЫ:\n• ...\n\n❌ МИНУСЫ:\n• ...\n\n💡 РЕКОМЕНДАЦИИ:\n• ...",
+                text: "Ты — senior дизайнер. Проанализируй дизайн на фото. Оцени от 1 до 100. Найди плюсы, минусы и дай рекомендации. Напиши на русском.",
               },
-              { type: "image_url", image_url: { url: dataUrl } },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64}`,
+                },
+              },
             ],
           },
         ],
-        max_tokens: 1000,
+        max_tokens: 2000,
       },
       {
         headers: {
@@ -544,18 +544,24 @@ async function reviewImage(chatId, photos) {
       },
     );
 
+    if (!result.data?.choices?.[0]?.message?.content) {
+      throw new Error("Пустой ответ от Groq");
+    }
+
     const text = result.data.choices[0].message.content;
-    const scoreMatch = text.match(/(\d+)\s*\/\s*100/);
+    const scoreMatch = text.match(/(\d+)\s*[\/|из]\s*100/);
     if (scoreMatch) {
       const stats = getStats(chatId);
       stats.reviews.push(parseInt(scoreMatch[1]));
     }
 
-    await bot.deleteMessage(chatId, waitMsg.message_id);
-    await bot.sendMessage(chatId, text, { parse_mode: "HTML" });
+    try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
+    await bot.sendMessage(chatId, text);
   } catch (err) {
-    await bot.deleteMessage(chatId, waitMsg.message_id);
-    await bot.sendMessage(chatId, `❌ Ошибка: ${err.response?.data?.error?.message || err.message}`);
+    const errMsg = err.response?.data?.error?.message || err.message || "Неизвестная ошибка";
+    try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
+    await bot.sendMessage(chatId, `❌ Ошибка: ${errMsg}`);
+    console.error("Review error:", JSON.stringify(err.response?.data || err.message));
   }
 }
 

@@ -312,4 +312,10 @@ bot.on("callback_query", (query) => {
   }
 });
 
+const http = require("http");
+const PORT = process.env.PORT || 10000;
+http.createServer((_, res) => res.end("Bot is running")).listen(PORT, () => {
+  console.log(`🌐 Health check server on port ${PORT}`);
+});
+
 console.log("🤖 Design Brief Bot запущен");

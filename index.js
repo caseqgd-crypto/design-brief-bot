@@ -402,11 +402,10 @@ bot.onText(/\/saved/, (msg) => showSavedList(msg.chat.id));
 
 bot.onText(/\/challenge/, (msg) => {
   const chatId = msg.chat.id;
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  const challenge = CHALLENGES[dayOfYear % CHALLENGES.length];
+  const challenge = pick(CHALLENGES);
   bot.sendMessage(
     chatId,
-    `🎯 <b>Челендж дня</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+    `🎯 <b>Челендж</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
     { parse_mode: "HTML" },
   );
 });
@@ -464,9 +463,8 @@ bot.on("callback_query", (query) => {
     lastBrief.set(chatId, brief);
     bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
   } else if (data === "cb_challenge") {
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-    const challenge = CHALLENGES[dayOfYear % CHALLENGES.length];
-    bot.editMessageText(`🎯 <b>Челендж дня</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+    const challenge = pick(CHALLENGES);
+    bot.editMessageText(`🎯 <b>Челендж</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
       { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
   } else if (data === "cb_quiz") {
     bot.editMessageText("🧠 Начинаем квиз!", { chat_id: chatId, message_id: msgId });

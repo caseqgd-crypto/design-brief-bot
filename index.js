@@ -750,13 +750,14 @@ async function reviewImage(chatId, photos) {
       stats.reviews.push(parseInt(scoreMatch[1]));
     }
 
+    const cleanText = text.replace(/\*/g, "");
     try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
-    if (text.length > 4000) {
-      for (let i = 0; i < text.length; i += 4000) {
-        await bot.sendMessage(chatId, text.slice(i, i + 4000));
+    if (cleanText.length > 4000) {
+      for (let i = 0; i < cleanText.length; i += 4000) {
+        await bot.sendMessage(chatId, cleanText.slice(i, i + 4000));
       }
     } else {
-      await bot.sendMessage(chatId, text);
+      await bot.sendMessage(chatId, cleanText);
     }
   } catch (err) {
     const errMsg = err.response?.data?.error?.message || err.message || l.server_error;

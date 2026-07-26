@@ -15,6 +15,10 @@ http.createServer((_, res) => res.end("Bot is running")).listen(PORT, () => {
   console.log(`🌐 Health check server on port ${PORT}`);
 });
 
+const savedBriefs = new Map();
+const lastBrief = new Map();
+const quizSessions = new Map();
+
 const PROJECT_TYPES = [
   "Логотип", "Фирменный стиль", "Сайт (лендинг)", "Сайт (многостраничный)",
   "Мобильное приложение", "Упаковка", "Баннерная кампания",
@@ -123,6 +127,107 @@ const DIFFICULTIES = {
   senior: "🔴 Senior — полный бренд-дизайн + анимация + адаптация",
 };
 
+const CHALLENGES = [
+  "Нарисуй иконку «настройки» в 3 разных стилях: flat, outline, filled. Экспортируй в SVG.",
+  "Сделай мудборд для финтех-стартапа. 10 референсов, опиши почему каждый подходит.",
+  "Найди 3 плохих дизайна на реальных сайтах и переделай их (один экран).",
+  "Спроектируй страницу 404 для мобильного приложения. Оригинально + полезно.",
+  "Выбери логотип известного бренда и перерисуй его в своём стиле.",
+  "Сделай 3 варианта визитки для себя. Разные стили, один макет.",
+  "Нарисуй 10 иконок для погодного приложения (солнце, дождь, снег и т.д.).",
+  "Создай UI для экрана регистрации. Минимум полей, максимум удобства.",
+  "Переделай главный экран любого приложения, которое тебя бесит.",
+  "Сделай анимацию загрузки (loader) в Figma. 3 варианта.",
+  "Нарисуй паттерн/текстуру для обоев телефона. Ручная работа.",
+  "Спроектируй карточку товара для маркетплейса. Выдели CTA.",
+  "Выбери шрифт и сделай 5 постеров с цитатами. Играй с типографикой.",
+  "Сделай гайдлайн по иконкам для вымышленного бренда (стиль, сетка, цвета).",
+  "Нарисуй дашборд для аналитики. 3 графика, 2 метрики, 1 таблица.",
+];
+
+const QUIZ_QUESTIONS = [
+  {
+    q: "Какой цвет получается при смешивании синего и жёлтого?",
+    options: ["Зелёный", "Фиолетовый", "Оранжевый", "Коричневый"],
+    answer: 0,
+  },
+  {
+    q: "Что такое кернинг в типографике?",
+    options: [
+      "Расстояние между строками",
+      "Расстояние между конкретными парами букв",
+      "Размер шрифта",
+      "Выравнивание текста",
+    ],
+    answer: 1,
+  },
+  {
+    q: "Какой формат изображения поддерживает прозрачность?",
+    options: ["JPEG", "PNG", "BMP", "GIF"],
+    answer: 1,
+  },
+  {
+    q: "Что такое Z-паттерн в веб-дизайне?",
+    options: [
+      "Схема движения взгляда слева-направо сверху-вниз",
+      "Зигзагообразное расположение блоков",
+      "Анимация появления элементов",
+      "Тип сетки для галереи",
+    ],
+    answer: 0,
+  },
+  {
+    q: "Какой шрифт относится к гротескам (без засечек)?",
+    options: ["Times New Roman", "Roboto", "Georgia", "Playfair Display"],
+    answer: 1,
+  },
+  {
+    q: "Сколько цветов в цветовой модели RGB?",
+    options: ["2", "3", "4", "5"],
+    answer: 1,
+  },
+  {
+    q: "Что такое UI Kit?",
+    options: [
+      "Набор готовых компонентов интерфейса",
+      "Инструмент для прототипирования",
+      "Плагин для Figma",
+      "Шрифтовой набор",
+    ],
+    answer: 0,
+  },
+  {
+    q: "Какой масштаб используется в дизайне интерфейсов для iOS?",
+    options: ["1x", "2x", "@1x и @2x", "@1x, @2x и @3x"],
+    answer: 3,
+  },
+  {
+    q: "Что такое «воздух» в дизайне?",
+    options: [
+      "Анимация элементов",
+      "Пустое пространство между элементами",
+      "Градиентная заливка",
+      "Прозрачность слоя",
+    ],
+    answer: 1,
+  },
+  {
+    q: "Какой принцип гештальта гласит «похожие элементы воспринимаются как группа»?",
+    options: ["Близость", "Подобие", "Замыкание", "Фигура и фон"],
+    answer: 1,
+  },
+  {
+    q: "Какой формат лучше всего подходит для логотипа?",
+    options: ["JPG", "SVG", "PNG-8", "WEBP"],
+    answer: 1,
+  },
+  {
+    q: "Что измеряется в pt (пунктах)?",
+    options: ["Размер шрифта", "Размер пикселя", "Длина линии", "Толщина обводки"],
+    answer: 0,
+  },
+];
+
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -163,29 +268,49 @@ function generateBrief(difficulty = "middle") {
   );
 }
 
-function keyboard(difficulty) {
+function briefKeyboard(difficulty) {
   return {
     reply_markup: {
       inline_keyboard: [
+        [{ text: "💾 Сохранить", callback_data: "save_last" }],
         [{ text: "🔄 Новое ТЗ", callback_data: "new" }],
         [
           { text: "🟢 Junior", callback_data: "diff_junior" },
           { text: "🟡 Middle", callback_data: "diff_middle" },
           { text: "🔴 Senior", callback_data: "diff_senior" },
         ],
+        [{ text: "📂 Мои сохранёнки", callback_data: "saved_list" }],
         [{ text: "🏠 В начало", callback_data: "start" }],
       ],
     },
   };
 }
 
+function startKeyboard() {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📋 ТЗ", callback_data: "cb_brief" }, { text: "🎯 Челендж", callback_data: "cb_challenge" }],
+        [{ text: "🧠 Квиз", callback_data: "cb_quiz" }, { text: "📂 Сохранёнки", callback_data: "saved_list" }],
+        [{ text: "🔄 Новое ТЗ", callback_data: "new" }],
+      ],
+    },
+  };
+}
+
 const startText =
-  "🎨 <b>Design Brief Bot</b>\n\nПривет! Я генерирую <b>технические задания на дизайн</b> для прокачки навыков и портфолио.\n\nЧто умею:\n• Случайное ТЗ → /brief\n• Junior / Middle / Senior → кнопки\n• Бесконечные комбинации — каждый раз уникальное задание\n\n<i>Нажми «Новое ТЗ» или выбери уровень 👇</i>";
+  "🎨 <b>Design Brief Bot</b>\n\nПривет! Я помогаю дизайнерам прокачиваться.\n\n" +
+  "📋 /brief — случайное ТЗ\n" +
+  "🎯 /challenge — задание на сегодня\n" +
+  "🧠 /quiz — проверить знания\n" +
+  "💾 /save — сохранить ТЗ\n" +
+  "📂 /saved — мои сохранёнки\n\n" +
+  "<i>Выбери что хочешь 👇</i>";
 
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, startText, {
     parse_mode: "HTML",
-    ...keyboard("middle"),
+    ...startKeyboard(),
   });
 });
 
@@ -194,42 +319,204 @@ bot.onText(/\/brief(.+)?/, (msg, match) => {
   const arg = (match[1] || "").trim().toLowerCase();
   let diff = "middle";
   if (["junior", "middle", "senior"].includes(arg)) diff = arg;
-  bot.sendMessage(chatId, generateBrief(diff), {
-    parse_mode: "HTML",
-    ...keyboard(diff),
-  });
+  const brief = generateBrief(diff);
+  lastBrief.set(chatId, brief);
+  bot.sendMessage(chatId, brief, { parse_mode: "HTML", ...briefKeyboard(diff) });
 });
+
+bot.onText(/\/save/, (msg) => {
+  const chatId = msg.chat.id;
+  const brief = lastBrief.get(chatId);
+  if (!brief) {
+    return bot.sendMessage(chatId, "Сначала сгенерируй ТЗ через /brief");
+  }
+  if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
+  const list = savedBriefs.get(chatId);
+  if (list.length >= 20) {
+    return bot.sendMessage(chatId, "Максимум 20 сохранёнок. Удали одну через /saved");
+  }
+  if (list.includes(brief)) {
+    return bot.sendMessage(chatId, "Это ТЗ уже сохранено");
+  }
+  list.push(brief);
+  bot.sendMessage(chatId, "✅ ТЗ сохранено!");
+});
+
+bot.onText(/\/saved/, (msg) => showSavedList(msg.chat.id));
+
+bot.onText(/\/challenge/, (msg) => {
+  const chatId = msg.chat.id;
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const challenge = CHALLENGES[dayOfYear % CHALLENGES.length];
+  bot.sendMessage(
+    chatId,
+    `🎯 <b>Челендж дня</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+    { parse_mode: "HTML" },
+  );
+});
+
+bot.onText(/\/quiz/, (msg) => startQuiz(msg.chat.id));
+
+function startQuiz(chatId) {
+  const shuffled = [...QUIZ_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 6);
+  quizSessions.set(chatId, { questions: shuffled, index: 0, correct: 0 });
+  sendQuestion(chatId);
+}
+
+function sendQuestion(chatId) {
+  const session = quizSessions.get(chatId);
+  if (!session || session.index >= session.questions.length) {
+    return finishQuiz(chatId);
+  }
+
+  const q = session.questions[session.index];
+  const buttons = q.options.map((opt, i) => [
+    { text: opt, callback_data: `quiz_${session.index}_${i}` },
+  ]);
+
+  bot.sendMessage(
+    chatId,
+    `🧠 <b>Вопрос ${session.index + 1}/${session.questions.length}</b>\n\n${q.q}\n\nПравильно: ${session.correct}/${session.index}`,
+    {
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: buttons },
+    },
+  );
+}
+
+function finishQuiz(chatId) {
+  const session = quizSessions.get(chatId);
+  const total = session ? session.questions.length : 0;
+  const correct = session ? session.correct : 0;
+  quizSessions.delete(chatId);
+
+  let grade = "🤡";
+  if (correct === total) grade = "🏆 Дизайн-бог!";
+  else if (correct >= total * 0.8) grade = "🔥 Отлично!";
+  else if (correct >= total * 0.6) grade = "👍 Неплохо";
+  else if (correct >= total * 0.4) grade = "📚 Учи матчасть";
+
+  bot.sendMessage(
+    chatId,
+    `🧠 <b>Квиз завершён!</b>\n\nПравильно: ${correct}/${total}\n\n${grade}`,
+    { parse_mode: "HTML" },
+  );
+}
 
 bot.on("callback_query", (query) => {
   const data = query.data;
   const chatId = query.message.chat.id;
-  const messageId = query.message.message_id;
+  const msgId = query.message.message_id;
 
   bot.answerCallbackQuery(query.id);
 
-  if (data === "new") {
-    bot.editMessageText(generateBrief("middle"), {
+  if (data === "start") {
+    bot.editMessageText(startText, {
       chat_id: chatId,
-      message_id: messageId,
+      message_id: msgId,
       parse_mode: "HTML",
-      ...keyboard("middle"),
+      ...startKeyboard(),
+    });
+  } else if (data === "cb_brief") {
+    const brief = generateBrief("middle");
+    lastBrief.set(chatId, brief);
+    bot.editMessageText(brief, {
+      chat_id: chatId,
+      message_id: msgId,
+      parse_mode: "HTML",
+      ...briefKeyboard("middle"),
+    });
+  } else if (data === "cb_challenge") {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    const challenge = CHALLENGES[dayOfYear % CHALLENGES.length];
+    bot.editMessageText(
+      `🎯 <b>Челендж дня</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+      { chat_id: chatId, message_id: msgId, parse_mode: "HTML" },
+    );
+  } else if (data === "cb_quiz") {
+    bot.editMessageText("🧠 Начинаем квиз!", { chat_id: chatId, message_id: msgId });
+    startQuiz(chatId);
+  } else if (data === "new") {
+    const brief = generateBrief("middle");
+    lastBrief.set(chatId, brief);
+    bot.editMessageText(brief, {
+      chat_id: chatId,
+      message_id: msgId,
+      parse_mode: "HTML",
+      ...briefKeyboard("middle"),
     });
   } else if (data.startsWith("diff_")) {
     const diff = data.split("_")[1];
-    bot.editMessageText(generateBrief(diff), {
+    const brief = generateBrief(diff);
+    lastBrief.set(chatId, brief);
+    bot.editMessageText(brief, {
       chat_id: chatId,
-      message_id: messageId,
+      message_id: msgId,
       parse_mode: "HTML",
-      ...keyboard(diff),
+      ...briefKeyboard(diff),
     });
-  } else if (data === "start") {
-    bot.editMessageText(startText, {
-      chat_id: chatId,
-      message_id: messageId,
+  } else if (data === "save_last") {
+    const brief = lastBrief.get(chatId);
+    if (!brief) return bot.sendMessage(chatId, "Нет ТЗ для сохранения");
+    if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
+    const list = savedBriefs.get(chatId);
+    if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок. Удали одну через /saved");
+    if (list.includes(brief)) return bot.sendMessage(chatId, "Уже сохранено");
+    list.push(brief);
+    bot.sendMessage(chatId, "✅ ТЗ сохранено!");
+  } else if (data === "saved_list") {
+    showSavedList(chatId);
+  } else if (data.startsWith("saved_show_")) {
+    const idx = parseInt(data.split("_")[2]);
+    const list = savedBriefs.get(chatId) || [];
+    if (!list[idx]) return bot.sendMessage(chatId, "ТЗ не найдено");
+    bot.sendMessage(chatId, list[idx], {
       parse_mode: "HTML",
-      ...keyboard("middle"),
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🗑 Удалить", callback_data: `saved_del_${idx}` }],
+        ],
+      },
     });
+  } else if (data.startsWith("saved_del_")) {
+    const idx = parseInt(data.split("_")[2]);
+    const list = savedBriefs.get(chatId);
+    if (!list || !list[idx]) return bot.sendMessage(chatId, "ТЗ не найдено");
+    list.splice(idx, 1);
+    if (list.length === 0) savedBriefs.delete(chatId);
+    bot.sendMessage(chatId, "🗑 Удалено!");
+  } else if (data.startsWith("quiz_")) {
+    const parts = data.split("_");
+    const qIdx = parseInt(parts[1]);
+    const chosen = parseInt(parts[2]);
+    const session = quizSessions.get(chatId);
+    if (!session || session.index !== qIdx) return;
+
+    const q = session.questions[qIdx];
+    const isCorrect = chosen === q.answer;
+    if (isCorrect) session.correct++;
+
+    bot.sendMessage(chatId, isCorrect ? "✅ Верно!" : `❌ Неверно. Правильный ответ: ${q.options[q.answer]}`);
+
+    session.index++;
+    sendQuestion(chatId);
   }
 });
+
+function showSavedList(chatId) {
+  const list = savedBriefs.get(chatId) || [];
+  if (list.length === 0) {
+    return bot.sendMessage(chatId, "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить");
+  }
+
+  const buttons = list.map((_, i) => [
+    { text: `ТЗ #${i + 1}`, callback_data: `saved_show_${i}` },
+  ]);
+
+  bot.sendMessage(chatId, `📂 <b>Мои сохранёнки</b> (${list.length}/20)`, {
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: buttons },
+  });
+}
 
 console.log("🤖 Design Brief Bot запущен");

@@ -37,6 +37,8 @@ const LANG = {
     save: "Сохранить",
     new: "Новое ТЗ",
     home: "В начало",
+    menu: "Меню",
+    del: "Удалить",
     stats_btn: "📊 Статистика",
     saved_btn: "📂 Сохранёнки",
     saved_none: "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить",
@@ -86,6 +88,8 @@ const LANG = {
     save: "Save",
     new: "New Brief",
     home: "Home",
+    menu: "Menu",
+    del: "Delete",
     stats_btn: "📊 Stats",
     saved_btn: "📂 Saved",
     saved_none: "📂 No saved briefs yet. Generate one → /brief → 💾 Save",
@@ -135,6 +139,8 @@ const LANG = {
     save: "Guardar",
     new: "Nuevo Briefing",
     home: "Inicio",
+    menu: "Menú",
+    del: "Eliminar",
     stats_btn: "📊 Stats",
     saved_btn: "📂 Guardados",
     saved_none: "📂 Sin guardados. Genera un briefing → /brief → 💾 Guardar",
@@ -544,6 +550,17 @@ function generateBrief(difficulty = "middle") {
   };
 }
 
+function menuKeyboard(chatId) {
+  const l = lang(chatId);
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: "📋 " + l.menu, callback_data: "start" }],
+      ],
+    },
+  };
+}
+
 function briefKeyboard(chatId, difficulty) {
   const l = lang(chatId);
   return {
@@ -621,13 +638,13 @@ bot.onText(/\/save/, (msg) => {
   const chatId = msg.chat.id;
   const l = lang(chatId);
   const brief = lastBrief.get(chatId);
-  if (!brief) return bot.sendMessage(chatId, l.save_first);
+  if (!brief) return bot.sendMessage(chatId, l.save_first, menuKeyboard(chatId));
   if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
   const list = savedBriefs.get(chatId);
-  if (list.length >= 20) return bot.sendMessage(chatId, l.saved_max);
-  if (list.includes(brief)) return bot.sendMessage(chatId, l.saved_dup);
+  if (list.length >= 20) return bot.sendMessage(chatId, l.saved_max, menuKeyboard(chatId));
+  if (list.includes(brief)) return bot.sendMessage(chatId, l.saved_dup, menuKeyboard(chatId));
   list.push(brief);
-  bot.sendMessage(chatId, l.saved_done);
+  bot.sendMessage(chatId, l.saved_done, menuKeyboard(chatId));
 });
 
 bot.onText(/\/saved/, (msg) => showSavedList(msg.chat.id));
@@ -638,13 +655,13 @@ bot.onText(/\/palette/, (msg) => {
   const chatId = msg.chat.id;
   const [name, ...colors] = pick(PALETTES);
   const hex = colors.map((c) => `• <code>${c}</code>`).join("\n");
-  bot.sendMessage(chatId, `🎨 <b>${name}</b>\n\n${hex}\n\n<i>${lang(chatId).palette_send}</i>`, { parse_mode: "HTML" });
+  bot.sendMessage(chatId, `🎨 <b>${name}</b>\n\n${hex}\n\n<i>${lang(chatId).palette_send}</i>`, { parse_mode: "HTML", ...menuKeyboard(chatId) });
 });
 
 bot.onText(/\/challenge/, (msg) => {
   const chatId = msg.chat.id;
   const l = lang(chatId);
-  bot.sendMessage(chatId, `${l.challenge_title}\n\n${pick(CHALLENGES)}\n\n<i>${l.challenge_hint}</i>`, { parse_mode: "HTML" });
+  bot.sendMessage(chatId, `${l.challenge_title}\n\n${pick(CHALLENGES)}\n\n<i>${l.challenge_hint}</i>`, { parse_mode: "HTML", ...menuKeyboard(chatId) });
 });
 
 bot.onText(/\/quiz/, (msg) => startQuiz(msg.chat.id));
@@ -687,15 +704,16 @@ function finishQuiz(chatId) {
   else if (correct >= total * 0.6) grade = l.grade_good;
   else if (correct >= total * 0.4) grade = l.grade_study;
 
-  bot.sendMessage(chatId, `🧠 <b>${l.quiz_done}</b>\n\n${l.correct}: ${correct}/${total}\n\n${grade}`, { parse_mode: "HTML" });
+  bot.sendMessage(chatId, `🧠 <b>${l.quiz_done}</b>\n\n${l.correct}: ${correct}/${total}\n\n${grade}`, { parse_mode: "HTML", ...menuKeyboard(chatId) });
 }
 
 function showSavedList(chatId) {
   const l = lang(chatId);
   const list = savedBriefs.get(chatId) || [];
-  if (list.length === 0) return bot.sendMessage(chatId, l.saved_none);
+  if (list.length === 0) return bot.sendMessage(chatId, l.saved_none, menuKeyboard(chatId));
 
   const buttons = list.map((_, i) => [{ text: `${l.brief} #${i + 1}`, callback_data: `saved_show_${i}` }]);
+  buttons.push([{ text: "📋 " + l.menu, callback_data: "start" }]);
   bot.sendMessage(chatId, `📂 <b>${l.saved_title}</b> (${list.length}/20)`, {
     parse_mode: "HTML",
     reply_markup: { inline_keyboard: buttons },
@@ -710,10 +728,8 @@ function showStats(chatId) {
 
   bot.sendMessage(
     chatId,
-    `📊 <b>${l.stats_title}</b>\n\n` +
-    `${l.stats_total}: <b>${stats.total}</b>\n\n` +
-    `📋 <b>${l.stats_by_type}:</b>\n${topTypes}`,
-    { parse_mode: "HTML" },
+    `📊 <b>${l.stats_title}</b>\n\n${l.stats_total}: <b>${stats.total}</b>\n\n📋 <b>${l.stats_by_type}:</b>\n${topTypes}`,
+    { parse_mode: "HTML", ...menuKeyboard(chatId) },
   );
 }
 
@@ -728,8 +744,7 @@ bot.on("callback_query", (query) => {
     const code = data.split("_")[1];
     userLang.set(chatId, code);
     const l = lang(chatId);
-    bot.editMessageText(l.lang_changed, { chat_id: chatId, message_id: msgId });
-    bot.sendMessage(chatId, l.start, { parse_mode: "HTML", ...langKeyboard(chatId) });
+    bot.editMessageText(l.start, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...langKeyboard(chatId) });
   } else if (data === "start") {
     const l = lang(chatId);
     bot.editMessageText(l.start, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...langKeyboard(chatId) });
@@ -745,16 +760,23 @@ bot.on("callback_query", (query) => {
     const [name, ...colors] = pick(PALETTES);
     const hex = colors.map((c) => `• <code>${c}</code>`).join("\n");
     bot.editMessageText(`🎨 <b>${name}</b>\n\n${hex}\n\n<i>${l.palette_send}</i>`,
-      { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
+      { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...menuKeyboard(chatId) });
   } else if (data === "cb_challenge") {
     const l = lang(chatId);
     bot.editMessageText(`${l.challenge_title}\n\n${pick(CHALLENGES)}\n\n<i>${l.challenge_hint}</i>`,
-      { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
+      { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...menuKeyboard(chatId) });
   } else if (data === "cb_quiz") {
     bot.editMessageText(lang(chatId).quiz_start, { chat_id: chatId, message_id: msgId });
     startQuiz(chatId);
   } else if (data === "cb_stats") {
-    showStats(chatId);
+    const l = lang(chatId);
+    const stats = getStats(chatId);
+    const byType = Object.entries(stats.byType).sort((a, b) => b[1] - a[1]);
+    const topTypes = byType.slice(0, 8).map(([type, count]) => `• ${type}: ${count}`).join("\n") || l.no_stats;
+    bot.editMessageText(
+      `📊 <b>${l.stats_title}</b>\n\n${l.stats_total}: <b>${stats.total}</b>\n\n📋 <b>${l.stats_by_type}:</b>\n${topTypes}`,
+      { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...menuKeyboard(chatId) },
+    );
   } else if (data === "new") {
     const result = generateBrief("middle");
     const stats = getStats(chatId);
@@ -779,26 +801,36 @@ bot.on("callback_query", (query) => {
     if (list.length >= 20) return bot.sendMessage(chatId, l.saved_max);
     if (list.includes(brief)) return bot.sendMessage(chatId, l.saved_dup);
     list.push(brief);
-    bot.sendMessage(chatId, l.saved_done);
+    bot.editMessageText(l.saved_done, { chat_id: chatId, message_id: msgId, ...menuKeyboard(chatId) });
   } else if (data === "saved_list") {
-    showSavedList(chatId);
+    const l = lang(chatId);
+    const list = savedBriefs.get(chatId) || [];
+    if (list.length === 0) {
+      return bot.editMessageText(l.saved_none, { chat_id: chatId, message_id: msgId, ...menuKeyboard(chatId) });
+    }
+    const buttons = list.map((_, i) => [{ text: `${l.brief} #${i + 1}`, callback_data: `saved_show_${i}` }]);
+    buttons.push([{ text: "📋 " + l.menu, callback_data: "start" }]);
+    bot.editMessageText(`📂 <b>${l.saved_title}</b> (${list.length}/20)`, {
+      chat_id: chatId, message_id: msgId, parse_mode: "HTML",
+      reply_markup: { inline_keyboard: buttons },
+    });
   } else if (data.startsWith("saved_show_")) {
     const l = lang(chatId);
     const idx = parseInt(data.split("_")[2]);
     const list = savedBriefs.get(chatId) || [];
-    if (!list[idx]) return bot.sendMessage(chatId, l.saved_notfound);
-    bot.sendMessage(chatId, list[idx], {
-      parse_mode: "HTML",
-      reply_markup: { inline_keyboard: [[{ text: "🗑 Удалить", callback_data: `saved_del_${idx}` }]] },
+    if (!list[idx]) return bot.editMessageText(l.saved_notfound, { chat_id: chatId, message_id: msgId, ...menuKeyboard(chatId) });
+    bot.editMessageText(list[idx], {
+      chat_id: chatId, message_id: msgId, parse_mode: "HTML",
+      reply_markup: { inline_keyboard: [[{ text: "🗑 " + l.del, callback_data: `saved_del_${idx}` }], [{ text: "📋 " + l.menu, callback_data: "start" }]] },
     });
   } else if (data.startsWith("saved_del_")) {
     const l = lang(chatId);
     const idx = parseInt(data.split("_")[2]);
     const list = savedBriefs.get(chatId);
-    if (!list || !list[idx]) return bot.sendMessage(chatId, l.saved_notfound);
+    if (!list || !list[idx]) return bot.editMessageText(l.saved_notfound, { chat_id: chatId, message_id: msgId, ...menuKeyboard(chatId) });
     list.splice(idx, 1);
     if (list.length === 0) savedBriefs.delete(chatId);
-    bot.sendMessage(chatId, l.saved_del);
+    bot.editMessageText(l.saved_del, { chat_id: chatId, message_id: msgId, ...menuKeyboard(chatId) });
   } else if (data.startsWith("quiz_")) {
     const parts = data.split("_");
     const qIdx = parseInt(parts[1]);
@@ -810,7 +842,8 @@ bot.on("callback_query", (query) => {
     const isCorrect = chosen === q.answer;
     if (isCorrect) session.correct++;
 
-    bot.sendMessage(chatId, isCorrect ? "✅ Верно!" : `❌ Неверно. Правильный ответ: ${q.options[q.answer]}`);
+    const l = lang(chatId);
+    bot.sendMessage(chatId, (isCorrect ? l.quiz_correct : l.quiz_wrong + " " + q.options[q.answer]), menuKeyboard(chatId));
     session.index++;
     sendQuestion(chatId);
   }

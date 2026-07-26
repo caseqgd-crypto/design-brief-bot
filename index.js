@@ -17,7 +17,7 @@ let critiqueModel = null;
 
 if (GEMINI_KEY) {
   genAI = new GoogleGenerativeAI(GEMINI_KEY);
-  critiqueModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  critiqueModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   console.log("🧠 Gemini подключён — критика дизайна доступна");
 } else {
   console.log("⚠️ GEMINI_API_KEY не задан — /critique недоступен");

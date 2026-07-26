@@ -1,10 +1,7 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const http = require("http");
-const axios = require("axios");
-
 const TOKEN = process.env.BOT_TOKEN;
-const GROQ_KEY = process.env.GROQ_API_KEY;
 if (!TOKEN) {
   console.error("❌ BOT_TOKEN не найден");
   process.exit(1);
@@ -17,12 +14,6 @@ http.createServer((_, res) => res.end("Bot is running")).listen(PORT, () => {
   console.log(`🌐 Health check server on port ${PORT}`);
 });
 
-if (GROQ_KEY) {
-  console.log("🤖 AI-ревью подключено (Groq)");
-} else {
-  console.log("⚠️ GROQ_API_KEY не задан — /review недоступен");
-}
-
 const savedBriefs = new Map();
 const lastBrief = new Map();
 const quizSessions = new Map();
@@ -32,7 +23,7 @@ const userLang = new Map();
 const LANG = {
   ru: {
     name: "Русский",
-    start: "🎨 Design Brief Bot\n\nПривет! Я помогаю дизайнерам прокачиваться.\n\n/brief — ТЗ\n/palette — палитра\n/challenge — задание\n/quiz — квиз\n/stats — статистика\n/save — сохранить\n/saved — сохранёнки\n/review — оценка дизайна\n/language — сменить язык",
+    start: "🎨 Design Brief Bot\n\nПривет! Я помогаю дизайнерам прокачиваться.\n\n/brief — ТЗ\n/palette — палитра\n/challenge — задание\n/quiz — квиз\n/stats — статистика\n/save — сохранить\n/saved — сохранёнки\n/language — сменить язык",
     brief: "📋 ТЗ",
     palette: "🎨 Палитра",
     challenge: "🎯 Челендж",
@@ -58,11 +49,7 @@ const LANG = {
     saved_notfound: "ТЗ не найдено",
     lang_choose: "🌐 Выбери язык / Choose language / Elige un idioma:",
     lang_changed: "✅ Язык изменён на русский",
-    review_intro: "📸 Отправь скриншот дизайна и ответь на него /review\n\nЯ оценю, найду плюсы и минусы.",
-    review_no_key: "❌ AI-ревью отключён. Добавь GROQ_API_KEY в Render → Environment.\n\nПолучить бесплатно: https://console.groq.com",
-    review_wait: "🔍 Анализирую дизайн...",
-    review_prompt: "Ты senior дизайнер. Оцени дизайн на фото. Пиши ТОЛЬКО на русском языке. НИ СЛОВА на английском. Без звездочек. Формат ответа строго:\n\nОценка: число из 100\n\nОшибки:\nсписок ошибок\n\nПлюсы:\nсписок плюсов\n\nРекомендации:\nчто исправить",
-    review_err: "❌ Ошибка",
+
     palette_send: "Скопируй hex и вставь в Figma!",
     challenge_title: "🎯 Челендж",
     challenge_hint: "Сделай и закрепи результат в портфолио!",
@@ -80,16 +67,12 @@ const LANG = {
     no_stats: "• Пока нет",
     stats_title: "📊 Моя статистика",
     stats_total: "Всего ТЗ",
-    stats_reviewed: "Оценено работ",
-    stats_avg: "Средняя оценка",
     stats_by_type: "📋 По типам",
-    server_error: "Неизвестная ошибка",
-    empty_response: "Пустой ответ от AI",
     max_saved: "Максимум 20 сохранёнок. Удали одну через /saved",
   },
   en: {
     name: "English",
-    start: "🎨 Design Brief Bot\n\nHi! I help designers level up.\n\n/brief — design brief\n/palette — color palette\n/challenge — task\n/quiz — quiz\n/stats — statistics\n/save — save brief\n/saved — my saved\n/review — design review\n/language — change language",
+    start: "🎨 Design Brief Bot\n\nHi! I help designers level up.\n\n/brief — design brief\n/palette — color palette\n/challenge — task\n/quiz — quiz\n/stats — statistics\n/save — save brief\n/saved — my saved\n/language — change language",
     brief: "📋 Brief",
     palette: "🎨 Palette",
     challenge: "🎯 Challenge",
@@ -115,11 +98,7 @@ const LANG = {
     saved_notfound: "Brief not found",
     lang_choose: "🌐 Choose language / Выбери язык / Elige un idioma:",
     lang_changed: "✅ Language changed to English",
-    review_intro: "📸 Send a design screenshot and reply with /review\n\nI'll rate it, find pros and cons.",
-    review_no_key: "❌ AI review disabled. Add GROQ_API_KEY in Render → Environment.\n\nGet free key: https://console.groq.com",
-    review_wait: "🔍 Analyzing design...",
-    review_prompt: "You are a senior designer. Analyze the design photo. Write ONLY in English. No asterisks. Strict format:\n\nScore: number out of 100\n\nMistakes:\nlist of mistakes\n\nPros:\nlist of pros\n\nRecommendations:\nwhat to fix",
-    review_err: "❌ Error",
+
     palette_send: "Copy hex codes and paste into Figma!",
     challenge_title: "🎯 Challenge",
     challenge_hint: "Complete it and add to your portfolio!",
@@ -137,16 +116,12 @@ const LANG = {
     no_stats: "• None yet",
     stats_title: "📊 My stats",
     stats_total: "Total briefs",
-    stats_reviewed: "Reviewed works",
-    stats_avg: "Average score",
     stats_by_type: "📋 By type",
-    server_error: "Unknown error",
-    empty_response: "Empty response from AI",
     max_saved: "Max 20 saved briefs. Delete one via /saved",
   },
   es: {
     name: "Español",
-    start: "🎨 Design Brief Bot\n\n¡Hola! Ayudo a diseñadores a mejorar.\n\n/brief — briefing\n/palette — paleta\n/challenge — desafío\n/quiz — cuestionario\n/stats — estadísticas\n/save — guardar\n/saved — guardados\n/review — evaluación\n/language — cambiar idioma",
+    start: "🎨 Design Brief Bot\n\n¡Hola! Ayudo a diseñadores a mejorar.\n\n/brief — briefing\n/palette — paleta\n/challenge — desafío\n/quiz — cuestionario\n/stats — estadísticas\n/save — guardar\n/saved — guardados\n/language — cambiar idioma",
     brief: "📋 Briefing",
     palette: "🎨 Paleta",
     challenge: "🎯 Desafío",
@@ -172,11 +147,7 @@ const LANG = {
     saved_notfound: "Briefing no encontrado",
     lang_choose: "🌐 Elige un idioma / Choose language / Выбери язык:",
     lang_changed: "✅ Idioma cambiado a Español",
-    review_intro: "📸 Envía una captura de diseño y responde con /review\n\nEvaluaré, encontraré pros y contras.",
-    review_no_key: "❌ Evaluación AI desactivada. Añade GROQ_API_KEY en Render → Environment.\n\nObtén clave gratis: https://console.groq.com",
-    review_wait: "🔍 Analizando diseño...",
-    review_prompt: "Eres un diseñador senior. Analiza el diseño de la foto. Escribe SOLO en español. SIN asteriscos. Formato estricto:\n\nPuntuación: número de 100\n\nErrores:\nlista de errores\n\nPros:\nlista de pros\n\nRecomendaciones:\nqu\\u00e9 mejorar",
-    review_err: "❌ Error",
+
     palette_send: "¡Copia los códigos hex y pégalos en Figma!",
     challenge_title: "🎯 Desafío",
     challenge_hint: "¡Complétalo y agrégalo a tu portafolio!",
@@ -194,11 +165,7 @@ const LANG = {
     no_stats: "• Ninguno aún",
     stats_title: "📊 Mis estadísticas",
     stats_total: "Total briefings",
-    stats_reviewed: "Trabajos evaluados",
-    stats_avg: "Puntuación media",
     stats_by_type: "📋 Por tipo",
-    server_error: "Error desconocido",
-    empty_response: "Respuesta vacía del AI",
     max_saved: "Máximo 20 guardados. Elimina uno con /saved",
   },
 };
@@ -534,7 +501,7 @@ function langKeyboard(chatId) {
 
 function getStats(chatId) {
   if (!userStats.has(chatId)) {
-    userStats.set(chatId, { total: 0, byType: {}, reviews: [], scores: [] });
+    userStats.set(chatId, { total: 0, byType: {} });
   }
   return userStats.get(chatId);
 }
@@ -604,8 +571,7 @@ const startText =
   "🧠 /quiz — проверить знания\n" +
   "📊 /stats — моя статистика\n" +
   "💾 /save — сохранить ТЗ\n" +
-  "📂 /saved — мои сохранёнки\n" +
-  "📸 /review — отправить работу на оценку\n\n" +
+  "📂 /saved — мои сохранёнки\n\n" +
   "<i>Выбери что хочешь 👇</i>";
 
 bot.onText(/\/start/, (msg) => {
@@ -683,89 +649,9 @@ bot.onText(/\/challenge/, (msg) => {
 
 bot.onText(/\/quiz/, (msg) => startQuiz(msg.chat.id));
 
-bot.onText(/\/review/, async (msg) => {
-  const chatId = msg.chat.id;
-  if (!GROQ_KEY) {
-    return bot.sendMessage(chatId, lang(chatId).review_no_key);
-  }
 
-  if (msg.reply_to_message && msg.reply_to_message.photo) {
-    await reviewImage(chatId, msg.reply_to_message.photo);
-  } else {
-    bot.sendMessage(chatId, lang(chatId).review_intro);
-  }
-});
 
-async function reviewImage(chatId, photos) {
-  const l = lang(chatId);
-  const waitMsg = await bot.sendMessage(chatId, l.review_wait);
 
-  try {
-    const photo = photos[photos.length - 1];
-    const file = await bot.getFile(photo.file_id);
-    const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`;
-    const resp = await axios.get(fileUrl, { responseType: "arraybuffer" });
-    const base64 = Buffer.from(resp.data).toString("base64");
-    const mimeType = file.file_path.endsWith(".png") ? "image/png" : "image/jpeg";
-
-    const result = await axios.post(
-      "https://api.groq.com/openai/v1/chat/completions",
-      {
-        model: "qwen/qwen3.6-27b",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: l.review_prompt,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType};base64,${base64}`,
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 500,
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${GROQ_KEY}`,
-          "Content-Type": "application/json",
-        },
-      },
-    );
-
-    if (!result.data?.choices?.[0]?.message?.content) {
-      throw new Error(l.empty_response);
-    }
-
-    const text = result.data.choices[0].message.content;
-    const scoreMatch = text.match(/(\d+)\s*[\/|из]\s*100/);
-    if (scoreMatch) {
-      const stats = getStats(chatId);
-      stats.reviews.push(parseInt(scoreMatch[1]));
-    }
-
-    const cleanText = text.replace(/\*/g, "");
-    try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
-    if (cleanText.length > 4000) {
-      for (let i = 0; i < cleanText.length; i += 4000) {
-        await bot.sendMessage(chatId, cleanText.slice(i, i + 4000));
-      }
-    } else {
-      await bot.sendMessage(chatId, cleanText);
-    }
-  } catch (err) {
-    const errMsg = err.response?.data?.error?.message || err.message || l.server_error;
-    try { await bot.deleteMessage(chatId, waitMsg.message_id); } catch {}
-    await bot.sendMessage(chatId, `${l.review_err}: ${errMsg}`);
-    console.error("Review error:", JSON.stringify(err.response?.data || err.message));
-  }
-}
 
 function startQuiz(chatId) {
   const shuffled = [...QUIZ_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 6);
@@ -821,16 +707,11 @@ function showStats(chatId) {
   const stats = getStats(chatId);
   const byType = Object.entries(stats.byType).sort((a, b) => b[1] - a[1]);
   const topTypes = byType.slice(0, 8).map(([type, count]) => `• ${type}: ${count}`).join("\n") || l.no_stats;
-  const avgScore = stats.reviews.length
-    ? Math.round(stats.reviews.reduce((a, b) => a + b, 0) / stats.reviews.length)
-    : "—";
 
   bot.sendMessage(
     chatId,
     `📊 <b>${l.stats_title}</b>\n\n` +
-    `${l.stats_total}: <b>${stats.total}</b>\n` +
-    `${l.stats_reviewed}: <b>${stats.reviews.length}</b>\n` +
-    `${l.stats_avg}: <b>${avgScore}/100</b>\n\n` +
+    `${l.stats_total}: <b>${stats.total}</b>\n\n` +
     `📋 <b>${l.stats_by_type}:</b>\n${topTypes}`,
     { parse_mode: "HTML" },
   );

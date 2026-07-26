@@ -1,27 +1,19 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
-const axios = require("axios");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const http = require("http");
 
 const TOKEN = process.env.BOT_TOKEN;
-const GEMINI_KEY = process.env.GEMINI_API_KEY;
-
 if (!TOKEN) {
   console.error("❌ BOT_TOKEN не найден");
   process.exit(1);
 }
 
 const bot = new TelegramBot(TOKEN, { polling: true });
-let genAI = null;
-let critiqueModel = null;
 
-if (GEMINI_KEY) {
-  genAI = new GoogleGenerativeAI(GEMINI_KEY);
-  critiqueModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-8b" });
-  console.log("🧠 Gemini подключён — критика дизайна доступна");
-} else {
-  console.log("⚠️ GEMINI_API_KEY не задан — /critique недоступен");
-}
+const PORT = process.env.PORT || 10000;
+http.createServer((_, res) => res.end("Bot is running")).listen(PORT, () => {
+  console.log(`🌐 Health check server on port ${PORT}`);
+});
 
 const PROJECT_TYPES = [
   "Логотип", "Фирменный стиль", "Сайт (лендинг)", "Сайт (многостраничный)",
@@ -188,13 +180,7 @@ function keyboard(difficulty) {
 }
 
 const startText =
-  "🎨 <b>Design Brief Bot</b>\n\n" +
-  "Привет! Я помогаю дизайнерам прокачиваться.\n\n" +
-  "Что умею:\n" +
-  "• Случайное ТЗ → /brief\n" +
-  "• Junior / Middle / Senior → кнопки\n" +
-  "• Анализ дизайна → отправь фото или /critique\n\n" +
-  "<i>Нажми кнопку или просто отправь скриншот своей работы 👇</i>";
+  "🎨 <b>Design Brief Bot</b>\n\nПривет! Я генерирую <b>технические задания на дизайн</b> для прокачки навыков и портфолио.\n\nЧто умею:\n• Случайное ТЗ → /brief\n• Junior / Middle / Senior → кнопки\n• Бесконечные комбинации — каждый раз уникальное задание\n\n<i>Нажми «Новое ТЗ» или выбери уровень 👇</i>";
 
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, startText, {
@@ -213,97 +199,6 @@ bot.onText(/\/brief(.+)?/, (msg, match) => {
     ...keyboard(diff),
   });
 });
-
-bot.onText(/\/critique/, async (msg) => {
-  const chatId = msg.chat.id;
-
-  if (!critiqueModel) {
-    return bot.sendMessage(
-      chatId,
-      "❌ Анализ дизайна отключён. Администратор не добавил GEMINI_API_KEY.\n\n" +
-        "Запроси бесплатный ключ: https://aistudio.google.com/apikey",
-    );
-  }
-
-  if (msg.reply_to_message && msg.reply_to_message.photo) {
-    const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
-    try {
-      const analysis = await analyzeImage(msg.reply_to_message.photo);
-      await bot.deleteMessage(chatId, waitMsg.message_id);
-      await bot.sendMessage(chatId, analysis, { parse_mode: "HTML" });
-    } catch (err) {
-      await bot.deleteMessage(chatId, waitMsg.message_id);
-      await bot.sendMessage(chatId, `❌ Ошибка анализа: ${err.message}`);
-    }
-  } else {
-    bot.sendMessage(
-      chatId,
-      "📸 Отправь мне скриншот или фото дизайна, и я проанализирую его.\n\n" +
-        "Или ответь этой командой на уже отправленное изображение.",
-    );
-  }
-});
-
-bot.on("photo", async (msg) => {
-  if (!critiqueModel) return;
-
-  const chatId = msg.chat.id;
-  const waitMsg = await bot.sendMessage(chatId, "🔍 Анализирую дизайн...");
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const analysis = await analyzeImage(msg.photo);
-      await bot.deleteMessage(chatId, waitMsg.message_id);
-      await bot.sendMessage(chatId, analysis, { parse_mode: "HTML" });
-      return;
-    } catch (err) {
-      if (err.message.includes("429") && attempt < 3) {
-        const delay = attempt * 25 * 1000;
-        await bot.editMessageText(
-          `⏳ Лимит запросов. Жду ${delay / 1000}с перед повтором (попытка ${attempt}/3)...`,
-          { chat_id: chatId, message_id: waitMsg.message_id },
-        );
-        await sleep(delay);
-      } else {
-        await bot.deleteMessage(chatId, waitMsg.message_id);
-        await bot.sendMessage(chatId, `❌ Ошибка анализа: ${err.message}`);
-        return;
-      }
-    }
-  }
-});
-
-async function analyzeImage(photos) {
-  const photo = photos[photos.length - 1];
-  const file = await bot.getFile(photo.file_id);
-  const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`;
-  const resp = await axios.get(fileUrl, { responseType: "arraybuffer" });
-  const base64 = Buffer.from(resp.data).toString("base64");
-  const mimeType = file.file_path.endsWith(".png") ? "image/png" : "image/jpeg";
-
-  const prompt =
-    "Ты — senior дизайнер с 10-летним опытом. Проанализируй этот дизайн и дай структурированную обратную связь на русском языке.\n\n" +
-    "📊 <b>СТРУКТУРА ОТВЕТА:</b>\n\n" +
-    "✅ <b>Что сделано хорошо</b> (3-5 пунктов)\n" +
-    "• напиши конкретные сильные стороны: композиция, цвета, типографика, иерархия, отступы\n\n" +
-    "⚠️ <b>Что можно улучшить</b> (2-4 пункта)\n" +
-    "• конкретные ошибки и зоны роста\n\n" +
-    "💡 <b>Рекомендации</b> (2-3 пункта)\n" +
-    "• конкретные шаги что исправить прямо сейчас\n\n" +
-    "🎯 <b>Оценка</b> (от 1 до 10)\n\n" +
-    "Будь конструктивным. Пиши по делу, без воды. Если дизайн отличный — похвали, но всё равно найди что улучшить.";
-
-  const result = await critiqueModel.generateContent([
-    prompt,
-    { inlineData: { data: base64, mimeType } },
-  ]);
-
-  return result.response.text();
-}
-
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 bot.on("callback_query", (query) => {
   const data = query.data;
@@ -335,12 +230,6 @@ bot.on("callback_query", (query) => {
       ...keyboard("middle"),
     });
   }
-});
-
-const http = require("http");
-const PORT = process.env.PORT || 10000;
-http.createServer((_, res) => res.end("Bot is running")).listen(PORT, () => {
-  console.log(`🌐 Health check server on port ${PORT}`);
 });
 
 console.log("🤖 Design Brief Bot запущен");

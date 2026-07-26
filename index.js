@@ -128,104 +128,166 @@ const DIFFICULTIES = {
 };
 
 const CHALLENGES = [
-  "Нарисуй иконку «настройки» в 3 разных стилях: flat, outline, filled. Экспортируй в SVG.",
-  "Сделай мудборд для финтех-стартапа. 10 референсов, опиши почему каждый подходит.",
-  "Найди 3 плохих дизайна на реальных сайтах и переделай их (один экран).",
-  "Спроектируй страницу 404 для мобильного приложения. Оригинально + полезно.",
-  "Выбери логотип известного бренда и перерисуй его в своём стиле.",
-  "Сделай 3 варианта визитки для себя. Разные стили, один макет.",
-  "Нарисуй 10 иконок для погодного приложения (солнце, дождь, снег и т.д.).",
-  "Создай UI для экрана регистрации. Минимум полей, максимум удобства.",
-  "Переделай главный экран любого приложения, которое тебя бесит.",
-  "Сделай анимацию загрузки (loader) в Figma. 3 варианта.",
-  "Нарисуй паттерн/текстуру для обоев телефона. Ручная работа.",
-  "Спроектируй карточку товара для маркетплейса. Выдели CTA.",
-  "Выбери шрифт и сделай 5 постеров с цитатами. Играй с типографикой.",
-  "Сделай гайдлайн по иконкам для вымышленного бренда (стиль, сетка, цвета).",
-  "Нарисуй дашборд для аналитики. 3 графика, 2 метрики, 1 таблица.",
+  "Нарисуй иконку «настройки» в 3 разных стилях: flat, outline, filled.",
+  "Сделай мудборд для финтех-стартапа — 10 референсов с описанием.",
+  "Найди 3 плохих дизайна на сайтах и переделай один экран.",
+  "Спроектируй страницу 404 для мобильного приложения.",
+  "Выбери логотип известного бренда и перерисуй в своём стиле.",
+  "Сделай 3 варианта визитки для себя в разных стилях.",
+  "Нарисуй 10 иконок для погодного приложения.",
+  "Создай UI экрана регистрации — минимум полей, максимум удобства.",
+  "Переделай главный экран приложения, которое тебя бесит.",
+  "Сделай анимацию загрузки (loader) в Figma — 3 варианта.",
+  "Нарисуй паттерн для обоев телефона.",
+  "Спроектируй карточку товара для маркетплейса.",
+  "Выбери шрифт и сделай 5 постеров с цитатами.",
+  "Сделай гайдлайн по иконкам для вымышленного бренда.",
+  "Нарисуй дашборд для аналитики: 3 графика, 2 метрики, таблица.",
+  "Разработай UI для экрана профиля пользователя.",
+  "Сделай редизайн кнопки подписки на YouTube.",
+  "Нарисуй 5 вариантов favicon для своего бренда.",
+  "Создай мокап для наушников в Figma.",
+  "Разработай сетку для Instagram-постов бренда.",
+  "Сделай таблицу стилей для iOS приложения.",
+  "Нарисуй иллюстрацию для пустого состояния (empty state).",
+  "Спроектируй онбординг из 3 экранов для приложения.",
+  "Сделай редизайн страницы логина Google.",
+  "Нарисуй 3D-иконку «корзина» изометрически.",
+  "Разработай дизайн email-рассылки для стартапа.",
+  "Сделай UI для экрана чата в мессенджере.",
+  "Нарисуй плашку для Twitch стримера.",
+  "Спроектируй дизайн для страницы «О нас».", 
+  "Сделай 3 варианта лендинга для одной секции.",
+  "Разработай дизайн системы уведомлений (toast, snackbar, alert).",
+  "Нарисуй стикерпак из 6 стикеров для Telegram.",
+  "Сделай редизайн карточки профиля LinkedIn.",
+  "Спроектируй экран загрузки (splash screen) для приложения.",
+  "Разработай UI для плеера подкастов.",
+  "Сделай дизайн ценовой таблицы (pricing table).",
+  "Нарисуй дашборд погоды — красиво и информативно.",
+  "Спроектируй меню для ресторана (цифровое).",
+  "Разработай UI для трекера привычек.",
+  "Сделай редизайн главной страницы Wikipedia.",
+  "Нарисуй 5 изометрических иконок для стартапа.",
+  "Спроектируй страницу подтверждения заказа.",
+  "Разработай дизайн для шаринга результатов (share card).",
+  "Сделай UI для поиска с фильтрами и результатами.",
+  "Нарисуй коллаж из 5 трендовых UI-элементов 2026 года.",
+  "Спроектируй прототип приложения для заметок.",
+  "Разработай дизайн Landing Page для курса по дизайну.",
+  "Сделай UI панели администратора (stats + users + settings).",
+  "Нарисуй тёмную и светлую тему для одного экрана.",
+  "Спроектируй экран «Нет интернета» (offline state).",
+  "Разработай мудборд для бренда одежды.",
+  "Сделай редизайн экрана настроек в Telegram.",
+  "Нарисуй анимированный баннер для соцсетей.",
 ];
 
 const QUIZ_QUESTIONS = [
-  {
-    q: "Какой цвет получается при смешивании синего и жёлтого?",
-    options: ["Зелёный", "Фиолетовый", "Оранжевый", "Коричневый"],
-    answer: 0,
-  },
-  {
-    q: "Что такое кернинг в типографике?",
-    options: [
-      "Расстояние между строками",
-      "Расстояние между конкретными парами букв",
-      "Размер шрифта",
-      "Выравнивание текста",
-    ],
-    answer: 1,
-  },
-  {
-    q: "Какой формат изображения поддерживает прозрачность?",
-    options: ["JPEG", "PNG", "BMP", "GIF"],
-    answer: 1,
-  },
-  {
-    q: "Что такое Z-паттерн в веб-дизайне?",
-    options: [
-      "Схема движения взгляда слева-направо сверху-вниз",
-      "Зигзагообразное расположение блоков",
-      "Анимация появления элементов",
-      "Тип сетки для галереи",
-    ],
-    answer: 0,
-  },
-  {
-    q: "Какой шрифт относится к гротескам (без засечек)?",
-    options: ["Times New Roman", "Roboto", "Georgia", "Playfair Display"],
-    answer: 1,
-  },
-  {
-    q: "Сколько цветов в цветовой модели RGB?",
-    options: ["2", "3", "4", "5"],
-    answer: 1,
-  },
-  {
-    q: "Что такое UI Kit?",
-    options: [
-      "Набор готовых компонентов интерфейса",
-      "Инструмент для прототипирования",
-      "Плагин для Figma",
-      "Шрифтовой набор",
-    ],
-    answer: 0,
-  },
-  {
-    q: "Какой масштаб используется в дизайне интерфейсов для iOS?",
-    options: ["1x", "2x", "@1x и @2x", "@1x, @2x и @3x"],
-    answer: 3,
-  },
-  {
-    q: "Что такое «воздух» в дизайне?",
-    options: [
-      "Анимация элементов",
-      "Пустое пространство между элементами",
-      "Градиентная заливка",
-      "Прозрачность слоя",
-    ],
-    answer: 1,
-  },
-  {
-    q: "Какой принцип гештальта гласит «похожие элементы воспринимаются как группа»?",
-    options: ["Близость", "Подобие", "Замыкание", "Фигура и фон"],
-    answer: 1,
-  },
-  {
-    q: "Какой формат лучше всего подходит для логотипа?",
-    options: ["JPG", "SVG", "PNG-8", "WEBP"],
-    answer: 1,
-  },
-  {
-    q: "Что измеряется в pt (пунктах)?",
-    options: ["Размер шрифта", "Размер пикселя", "Длина линии", "Толщина обводки"],
-    answer: 0,
-  },
+  { q: "Какой цвет получается при смешивании синего и жёлтого?", options: ["Зелёный", "Фиолетовый", "Оранжевый", "Коричневый"], answer: 0 },
+  { q: "Что такое кернинг в типографике?", options: ["Расстояние между строками", "Расстояние между парами букв", "Размер шрифта", "Выравнивание текста"], answer: 1 },
+  { q: "Какой формат поддерживает прозрачность?", options: ["JPEG", "PNG", "BMP", "GIF"], answer: 1 },
+  { q: "Что такое Z-паттерн?", options: ["Движение взгляда слева-направо сверху-вниз", "Зигзагообразное расположение", "Анимация появления", "Тип сетки для галереи"], answer: 0 },
+  { q: "Какой шрифт относится к гротескам?", options: ["Times New Roman", "Roboto", "Georgia", "Playfair Display"], answer: 1 },
+  { q: "Сколько цветов в RGB?", options: ["2", "3", "4", "5"], answer: 1 },
+  { q: "Что такое UI Kit?", options: ["Набор готовых компонентов", "Инструмент прототипирования", "Плагин Figma", "Шрифтовой набор"], answer: 0 },
+  { q: "Что такое «воздух» в дизайне?", options: ["Анимация", "Пустое пространство между элементами", "Градиент", "Прозрачность"], answer: 1 },
+  { q: "Какой принцип гештальта — «похожие элементы как группа»?", options: ["Близость", "Подобие", "Замыкание", "Фигура и фон"], answer: 1 },
+  { q: "Какой формат лучше для логотипа?", options: ["JPG", "SVG", "PNG-8", "WEBP"], answer: 1 },
+  { q: "Что измеряется в pt?", options: ["Размер шрифта", "Пиксели", "Длина линии", "Толщина обводки"], answer: 0 },
+  { q: "Какой цветовой режим для печати?", options: ["RGB", "CMYK", "HEX", "HSL"], answer: 1 },
+  { q: "Что такое F-pattern?", options: ["Сетка для форм", "Паттерн чтения F-образно", "Flexbox layout", "Анимация"], answer: 1 },
+  { q: "Сколько px в 1pt?", options: ["1", "1.25", "1.333", "2"], answer: 2 },
+  { q: "Кто создал грид-систему в веб-дизайне?", options: ["Дэн Браун", "Йозеф Мюллер-Брокман", "Дитер Рамс", "Пол Рэнд"], answer: 1 },
+  { q: "Что означает HSL?", options: ["Hue, Saturation, Lightness", "Height, Size, Length", "High, Standard, Low", "Hex, Saturation, Line"], answer: 0 },
+  { q: "Какой шрифт создан специально для экранов?", options: ["Arial", "Roboto", "Helvetica", "Garamond"], answer: 1 },
+  { q: "Что такое авто-лейаут в Figma?", options: ["Расстановка элементов", "Адаптивный контейнер", "Сетка", "Плагин"], answer: 1 },
+  { q: "Какая программа стандарт для векторной графики?", options: ["Photoshop", "Illustrator", "Lightroom", "After Effects"], answer: 1 },
+  { q: "Что такое хедер (header)?", options: ["Подвал сайта", "Шапка сайта", "Боковое меню", "Фон"], answer: 1 },
+  { q: "Что делает инструмент «Перо» в Figma?", options: ["Рисует кистью", "Создаёт кривые Безье", "Выделяет объекты", "Заливает цветом"], answer: 1 },
+  { q: "Какой размер для иконок в Android?", options: ["24dp", "48dp", "32dp", "16dp"], answer: 0 },
+  { q: "Кто придумал 10 принципов хорошего дизайна?", options: ["Стив Джобс", "Дитер Рамс", "Йозеф Мюллер-Брокман", "Пол Рэнд"], answer: 1 },
+  { q: "Что такое компонент в Figma?", options: ["Скопированный блок", "Переиспользуемый элемент", "Плагин", "Шрифт"], answer: 1 },
+  { q: "Сколько принципов дизайна у Дитера Рамса?", options: ["5", "10", "7", "12"], answer: 1 },
+  { q: "Что такое футер (footer)?", options: ["Шапка", "Подвал", "Боковая панель", "Слайдер"], answer: 1 },
+  { q: "Какой масштаб для иконок в iOS?", options: ["@1x", "@2x", "@3x", "Все"], answer: 3 },
+  { q: "Что такое отзывчивый дизайн?", options: ["Фиксированная верстка", "Адаптация под экран", "Только мобильная версия", "Печатная версия"], answer: 1 },
+  { q: "Какое разрешение у Full HD?", options: ["1280x720", "1920x1080", "2560x1440", "3840x2160"], answer: 1 },
+  { q: "Что такое мокап?", options: ["Код сайта", "Макет в контексте", "Плагин", "Цветовая палитра"], answer: 1 },
+  { q: "Какая программа для прототипирования?", options: ["Photoshop", "Figma", "Lightroom", "Premiere"], answer: 1 },
+  { q: "Что такое контрастность в дизайне?", options: ["Разница между цветами", "Яркость экрана", "Прозрачность", "Толщина линии"], answer: 0 },
+  { q: "Какая гарнитура у заголовков в большинстве сайтов?", options: ["Serif", "Sans-serif", "Script", "Display"], answer: 1 },
+  { q: "Что такое ретинизация?", options: ["Удаление пикселей", "Адаптация под Retina-дисплеи", "Сжатие изображений", "Добавление текстуры"], answer: 1 },
+  { q: "Кто основал Bauhaus?", options: ["Вальтер Гропиус", "Ле Корбюзье", "Пабло Пикассо", "Сальвадор Дали"], answer: 0 },
+  { q: "Что делает блендинг-режим Multiply?", options: ["Осветляет", "Затемняет", "Добавляет прозрачность", "Инвертирует цвета"], answer: 1 },
+  { q: "Какой тип кривой в easing-функции ease-out?", options: ["Быстрый старт медленный конец", "Медленный старт быстрый конец", "Равномерно", "Пружина"], answer: 1 },
+  { q: "Сколько весит хороший логотип SVG?", options: ["~1-5 KB", "~100 KB", "~1 MB", "~10 MB"], answer: 0 },
+  { q: "Что такое style guide?", options: ["Гайд по CSS", "Документация по визуальному стилю", "Книга по дизайну", "Курс"], answer: 1 },
+  { q: "Какой шрифт создал Эрик Шпикерманн?", options: ["Futura", "FF Meta", "Helvetica", "Akzidenz Grotesk"], answer: 1 },
+  { q: "Что такое вайрфрейм?", options: ["Схема расположения блоков", "Готовый дизайн", "Анимация", "Прототип"], answer: 0 },
+  { q: "Какая горячая клавиша для группы в Figma?", options: ["Ctrl+G", "Ctrl+Shift+G", "Ctrl+K", "Ctrl+E"], answer: 0 },
+  { q: "Что делает Auto Layout в Figma?", options: ["Рисует линии", "Автоматически располагает элементы", "Создаёт анимацию", "Меняет цвета"], answer: 1 },
+  { q: "Какой принцип дизайна важнее всего для UX?", options: ["Эстетика", "Юзабилити", "Цвет", "Шрифт"], answer: 1 },
+  { q: "Что такое итерация в дизайне?", options: ["Повторение узора", "Цикл улучшения через версии", "Копирование элемента", "Анимация"], answer: 1 },
+  { q: "Какая цветовая модель у экранов?", options: ["CMYK", "RGB", "Pantone", "RAL"], answer: 1 },
+  { q: "Что такое адаптивный дизайн?", options: ["Один макет на все экраны", "Подстройка под разные экраны", "Только десктоп", "Печатный макет"], answer: 1 },
+  { q: "Кто создатель Apple Human Interface Guidelines?", options: ["Apple", "Google", "Microsoft", "Mozilla"], answer: 0 },
+  { q: "Как называют пустое пространство в типографике?", options: ["Воздух", "Отступ", "Поля", "Интервал"], answer: 0 },
+  { q: "Сколько оттенков серого в 8-битном изображении?", options: ["64", "128", "256", "512"], answer: 2 },
+  { q: "Что делает эффект размытия в дизайне?", options: ["Ухудшает качество", "Создаёт глубину и фокус", "Удаляет объекты", "Меняет цвет"], answer: 1 },
+  { q: "Какой Material Design язык у Google?", options: ["Flat Design", "Material Design", "Neumorphism", "Glassmorphism"], answer: 1 },
+  { q: "Что такое компонентная система?", options: ["Набор переиспользуемых UI-элементов", "Железо компьютера", "Операционная система", "Язык программирования"], answer: 0 },
+  { q: "Сколько принципов в Material Design?", options: ["3", "5", "7", "10"], answer: 0 },
+  { q: "Какой стандартный размер холста для Instagram Stories?", options: ["1080x1080", "1080x1920", "1920x1080", "750x1334"], answer: 1 },
+  { q: "Что такое easing в анимации?", options: ["Скорость анимации", "Сглаживание движения", "Повтор", "Задержка"], answer: 1 },
+  { q: "Какой формат для анимированных иконок в iOS?", options: ["GIF", "Lottie (JSON)", "APNG", "SVG"], answer: 1 },
+  { q: "Кто автор книги «Дизайн привычных вещей»?", options: ["Дон Норман", "Стив Круг", "Джейкоб Нильсен", "Брюс Тогнаццини"], answer: 0 },
+  { q: "Что такое Microinteraction?", options: ["Маленькая анимация на действие", "Микросхема", "Маленькая иконка", "Плагин"], answer: 0 },
+  { q: "Какая сетка чаще всего в вебе?", options: ["8-пиксельная", "4-пиксельная", "10-пиксельная", "6-пиксельная"], answer: 0 },
+  { q: "Что такое JOMO в дизайне?", options: ["Joy of Missing Out — минимализм", "Градиент", "Шрифт", "Плагин"], answer: 0 },
+  { q: "Какой лучший формат для фото на сайте?", options: ["PNG", "WEBP", "BMP", "TIFF"], answer: 1 },
+  { q: "Что делает constraint в Figma?", options: ["Ограничивает размер", "Привязывает к родителю", "Добавляет тень", "Блокирует слой"], answer: 1 },
+  { q: "Какая операционная система у Apple для дизайнеров?", options: ["iOS", "macOS", "iPadOS", "Все"], answer: 3 },
+  { q: "Что такое UX-исследование?", options: ["Опрос пользователей", "Тестирование гипотез на пользователях", "Дизайн-ревью", "Кодинг"], answer: 1 },
+  { q: "Какой главный принцип у Swiss Style?", options: ["Асимметрия и сетка", "Симметрия", "3D-эффекты", "Тени"], answer: 0 },
+  { q: "Что такое design debt?", options: ["Накопленные дизайн-проблемы", "Долг за плагины", "Просрочка дедлайна", "Бюджет"], answer: 0 },
+  { q: "Какой самый популярный шрифт 20 века?", options: ["Arial", "Helvetica", "Times New Roman", "Futura"], answer: 1 },
+  { q: "Что такое visual hierarchy?", options: ["Порядок значимости элементов", "Сетка", "Цветовая палитра", "Иерархия папок"], answer: 0 },
+  { q: "Как сделать темную тему правильно?", options: ["Инвертировать цвета", "Использовать тёмно-серый + акцентные", "Чёрный фон", "Белый текст"], answer: 1 },
+  { q: "Что такое атомарный дизайн?", options: ["Дизайн по атомам-молекулам-организмам", "Минимализм", "Сетка", "Анимация"], answer: 0 },
+  { q: "Сколько этапов в дизайн-мышлении?", options: ["3", "5", "7", "4"], answer: 1 },
+  { q: "Кто создал брендбук IBM?", options: ["Пол Рэнд", "Дитер Рамс", "Милтон Глейзер", "Сол Басс"], answer: 0 },
+  { q: "Какой плагин для генерации контента в Figma?", options: ["Unsplash", "Content Reel", "Map Maker", "All"], answer: 3 },
+  { q: "Что такое breakpoint в веб-дизайне?", options: ["Точка поломки", "Контрольная точка адаптива", "Размер шрифта", "Цвет"], answer: 1 },
+  { q: "Какая программа для 3D-моделирования в дизайне?", options: ["Blender", "Figma", "Sketch", "Adobe XD"], answer: 0 },
+  { q: "Что такое Bootstrap?", options: ["Дизайн-система", "CSS-фреймворк", "Язык", "Плагин"], answer: 1 },
+  { q: "Кто создал первый смайлик :-)", options: ["Скотт Фалман", "Харви Болл", "Шигетака Курита", "Тим Бернерс-Ли"], answer: 0 },
+  { q: "Что такое color theory?", options: ["Теория сочетания цветов", "Палитра", "Градиент", "Цветовой круг"], answer: 0 },
+  { q: "Сколько базовых цветов в цветовом круге Иттена?", options: ["6", "8", "12", "3"], answer: 2 },
+  { q: "Что такое accessibility в дизайне?", options: ["Доступность для всех пользователей", "Красивый дизайн", "Скорость загрузки", "Анимация"], answer: 0 },
+  { q: "Какое минимальное соотношение контрастности для текста WCAG?", options: ["2:1", "4.5:1", "3:1", "7:1"], answer: 1 },
+  { q: "Что делает опция «Clip Content» в Figma?", options: ["Обрезает контент по границе", "Копирует слой", "Вставляет", "Группирует"], answer: 0 },
+  { q: "Какой формат у файлов Figma?", options: [".figma", ".fig", ".sketch", ".xd"], answer: 1 },
+  { q: "Что такое Bootstrap Icons?", options: ["Библиотека иконок", "Шрифт", "Плагин", "Темы"], answer: 0 },
+  { q: "Как часто выходят новые версии iOS Human Interface?", options: ["Каждый год", "Каждые полгода", "Каждый квартал", "Раз в месяц"], answer: 0 },
+  { q: "Что такое дизайн-система?", options: ["Набор правил и компонентов", "Тема оформления", "Шрифт", "Программа"], answer: 0 },
+  { q: "Кто разработал шрифт Inter?", options: ["Google", "Rasmus Andersson", "Apple", "Adobe"], answer: 1 },
+  { q: "Какой плагин Figma для иконок?", options: ["Iconify", "Feather Icons", "Material Icons", "Все"], answer: 3 },
+  { q: "Что такое storyboard?", options: ["Сценарий с раскадровкой", "Доска задач", "Список идей", "Презентация"], answer: 0 },
+  { q: "Какая высота строки (line-height) оптимальна для текста?", options: ["100%", "120-140%", "150-170%", "200%"], answer: 1 },
+  { q: "Что такое moodboard?", options: ["Коллаж референсов и вдохновения", "Инструмент для рисования", "Тип шрифта", "Плагин"], answer: 0 },
+  { q: "Кто изобрёл CSS Grid?", options: ["Mozilla", "Google", "Apple", "Microsoft"], answer: 0 },
+  { q: "Что делает эффект слоя Drop Shadow?", options: ["Добавляет тень", "Размывает слой", "Меняет цвет", "Удаляет"], answer: 0 },
+  { q: "Какой стандарт диагонали для мобильных макетов в Figma?", options: ["375x812 (iPhone X)", "414x896", "360x640", "320x568"], answer: 0 },
+  { q: "Что такое community в Figma?", options: ["Форум", "Библиотека публичных файлов", "Чат", "Блог"], answer: 1 },
+  { q: "Что такое Design Tokens?", options: ["Переменные дизайна", "Жетоны", "Бейджи", "Плагины"], answer: 0 },
+  { q: "Какова главная цель UX-дизайна?", options: ["Красота", "Удобство пользователя", "Скорость", "Цена"], answer: 1 },
+  { q: "Кто написал книгу «Не заставляйте меня думать»?", options: ["Дон Норман", "Стив Круг", "Якоб Нильсен", "Брюс Ли"], answer: 1 },
+  { q: "Что делает Variant в Figma?", options: ["Вариант компонента", "Смена цвета", "Анимация", "Размер"], answer: 0 },
+  { q: "Сколько принципов в iOS Human Interface Guidelines?", options: ["5", "8", "10", "3"], answer: 2 },
+  { q: "Что такое «скелетон» (skeleton screen)?", options: ["Загрузочное состояние", "Пустой экран", "Каркас сайта", "Макет"], answer: 0 },
+  { q: "Какой год основания Figma?", options: ["2012", "2015", "2016", "2018"], answer: 2 },
+  { q: "Что такое Boolean Group в Figma?", options: ["Группа с масками", "Объединение фигур", "Группа слоёв", "Авто-лейаут"], answer: 1 },
 ];
 
 function pick(arr) {
@@ -327,17 +389,11 @@ bot.onText(/\/brief(.+)?/, (msg, match) => {
 bot.onText(/\/save/, (msg) => {
   const chatId = msg.chat.id;
   const brief = lastBrief.get(chatId);
-  if (!brief) {
-    return bot.sendMessage(chatId, "Сначала сгенерируй ТЗ через /brief");
-  }
+  if (!brief) return bot.sendMessage(chatId, "Сначала сгенерируй ТЗ через /brief");
   if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
   const list = savedBriefs.get(chatId);
-  if (list.length >= 20) {
-    return bot.sendMessage(chatId, "Максимум 20 сохранёнок. Удали одну через /saved");
-  }
-  if (list.includes(brief)) {
-    return bot.sendMessage(chatId, "Это ТЗ уже сохранено");
-  }
+  if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок. Удали одну через /saved");
+  if (list.includes(brief)) return bot.sendMessage(chatId, "Это ТЗ уже сохранено");
   list.push(brief);
   bot.sendMessage(chatId, "✅ ТЗ сохранено!");
 });
@@ -365,9 +421,7 @@ function startQuiz(chatId) {
 
 function sendQuestion(chatId) {
   const session = quizSessions.get(chatId);
-  if (!session || session.index >= session.questions.length) {
-    return finishQuiz(chatId);
-  }
+  if (!session || session.index >= session.questions.length) return finishQuiz(chatId);
 
   const q = session.questions[session.index];
   const buttons = q.options.map((opt, i) => [
@@ -377,10 +431,7 @@ function sendQuestion(chatId) {
   bot.sendMessage(
     chatId,
     `🧠 <b>Вопрос ${session.index + 1}/${session.questions.length}</b>\n\n${q.q}\n\nПравильно: ${session.correct}/${session.index}`,
-    {
-      parse_mode: "HTML",
-      reply_markup: { inline_keyboard: buttons },
-    },
+    { parse_mode: "HTML", reply_markup: { inline_keyboard: buttons } },
   );
 }
 
@@ -396,11 +447,7 @@ function finishQuiz(chatId) {
   else if (correct >= total * 0.6) grade = "👍 Неплохо";
   else if (correct >= total * 0.4) grade = "📚 Учи матчасть";
 
-  bot.sendMessage(
-    chatId,
-    `🧠 <b>Квиз завершён!</b>\n\nПравильно: ${correct}/${total}\n\n${grade}`,
-    { parse_mode: "HTML" },
-  );
+  bot.sendMessage(chatId, `🧠 <b>Квиз завершён!</b>\n\nПравильно: ${correct}/${total}\n\n${grade}`, { parse_mode: "HTML" });
 }
 
 bot.on("callback_query", (query) => {
@@ -411,56 +458,34 @@ bot.on("callback_query", (query) => {
   bot.answerCallbackQuery(query.id);
 
   if (data === "start") {
-    bot.editMessageText(startText, {
-      chat_id: chatId,
-      message_id: msgId,
-      parse_mode: "HTML",
-      ...startKeyboard(),
-    });
+    bot.editMessageText(startText, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...startKeyboard() });
   } else if (data === "cb_brief") {
     const brief = generateBrief("middle");
     lastBrief.set(chatId, brief);
-    bot.editMessageText(brief, {
-      chat_id: chatId,
-      message_id: msgId,
-      parse_mode: "HTML",
-      ...briefKeyboard("middle"),
-    });
+    bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
   } else if (data === "cb_challenge") {
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
     const challenge = CHALLENGES[dayOfYear % CHALLENGES.length];
-    bot.editMessageText(
-      `🎯 <b>Челендж дня</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
-      { chat_id: chatId, message_id: msgId, parse_mode: "HTML" },
-    );
+    bot.editMessageText(`🎯 <b>Челендж дня</b>\n\n${challenge}\n\n<i>Сделай и закрепи результат в портфолио!</i>`,
+      { chat_id: chatId, message_id: msgId, parse_mode: "HTML" });
   } else if (data === "cb_quiz") {
     bot.editMessageText("🧠 Начинаем квиз!", { chat_id: chatId, message_id: msgId });
     startQuiz(chatId);
   } else if (data === "new") {
     const brief = generateBrief("middle");
     lastBrief.set(chatId, brief);
-    bot.editMessageText(brief, {
-      chat_id: chatId,
-      message_id: msgId,
-      parse_mode: "HTML",
-      ...briefKeyboard("middle"),
-    });
+    bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard("middle") });
   } else if (data.startsWith("diff_")) {
     const diff = data.split("_")[1];
     const brief = generateBrief(diff);
     lastBrief.set(chatId, brief);
-    bot.editMessageText(brief, {
-      chat_id: chatId,
-      message_id: msgId,
-      parse_mode: "HTML",
-      ...briefKeyboard(diff),
-    });
+    bot.editMessageText(brief, { chat_id: chatId, message_id: msgId, parse_mode: "HTML", ...briefKeyboard(diff) });
   } else if (data === "save_last") {
     const brief = lastBrief.get(chatId);
     if (!brief) return bot.sendMessage(chatId, "Нет ТЗ для сохранения");
     if (!savedBriefs.has(chatId)) savedBriefs.set(chatId, []);
     const list = savedBriefs.get(chatId);
-    if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок. Удали одну через /saved");
+    if (list.length >= 20) return bot.sendMessage(chatId, "Максимум 20 сохранёнок");
     if (list.includes(brief)) return bot.sendMessage(chatId, "Уже сохранено");
     list.push(brief);
     bot.sendMessage(chatId, "✅ ТЗ сохранено!");
@@ -472,11 +497,7 @@ bot.on("callback_query", (query) => {
     if (!list[idx]) return bot.sendMessage(chatId, "ТЗ не найдено");
     bot.sendMessage(chatId, list[idx], {
       parse_mode: "HTML",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🗑 Удалить", callback_data: `saved_del_${idx}` }],
-        ],
-      },
+      reply_markup: { inline_keyboard: [[{ text: "🗑 Удалить", callback_data: `saved_del_${idx}` }]] },
     });
   } else if (data.startsWith("saved_del_")) {
     const idx = parseInt(data.split("_")[2]);
@@ -505,14 +526,9 @@ bot.on("callback_query", (query) => {
 
 function showSavedList(chatId) {
   const list = savedBriefs.get(chatId) || [];
-  if (list.length === 0) {
-    return bot.sendMessage(chatId, "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить");
-  }
+  if (list.length === 0) return bot.sendMessage(chatId, "📂 Сохранёнок нет. Сгенерируй ТЗ → /brief → 💾 Сохранить");
 
-  const buttons = list.map((_, i) => [
-    { text: `ТЗ #${i + 1}`, callback_data: `saved_show_${i}` },
-  ]);
-
+  const buttons = list.map((_, i) => [{ text: `ТЗ #${i + 1}`, callback_data: `saved_show_${i}` }]);
   bot.sendMessage(chatId, `📂 <b>Мои сохранёнки</b> (${list.length}/20)`, {
     parse_mode: "HTML",
     reply_markup: { inline_keyboard: buttons },
